@@ -3,6 +3,10 @@ import SwiftUI
 
 @MainActor
 final class OverlayWindowController: NSWindowController, NSWindowDelegate {
+    private enum CameraSnapLayout {
+        static let topMargin: CGFloat = 8
+    }
+
     private let settingsStore: SettingsStore
     private let viewModel: NotesViewModel
 
@@ -104,6 +108,22 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         viewModel.toggleAutoScroll()
     }
 
+    func snapToCameraPosition() {
+        guard let window else { return }
+
+        let targetScreen = Self.screenForSnapping(window: window)
+        let visibleFrame = targetScreen.visibleFrame
+        let width = min(max(window.frame.width, window.minSize.width), visibleFrame.width)
+        let height = min(max(window.frame.height, window.minSize.height), visibleFrame.height)
+        let originX = visibleFrame.midX - (width / 2)
+        let originY = visibleFrame.maxY - height - CameraSnapLayout.topMargin
+        let snappedFrame = CGRect(x: originX, y: originY, width: width, height: height)
+
+        window.setFrame(snappedFrame, display: true, animate: true)
+        persistWindowFrame()
+        showOverlay()
+    }
+
     func applyOpacity(_ opacity: Double) {
         window?.alphaValue = min(max(opacity, 0.2), 1.0)
     }
@@ -149,5 +169,24 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         let y = min(max(proposedFrame.minY, visibleFrame.minY), maxY)
 
         return CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    private static func screenForSnapping(window: NSWindow) -> NSScreen {
+        if let containingScreen = window.screen {
+            return containingScreen
+        }
+
+        let windowFrame = window.frame
+        let bestScreen = NSScreen.screens.max { lhs, rhs in
+            intersectionArea(of: lhs.visibleFrame, with: windowFrame) < intersectionArea(of: rhs.visibleFrame, with: windowFrame)
+        }
+
+        return bestScreen ?? NSScreen.main ?? NSScreen.screens[0]
+    }
+
+    private static func intersectionArea(of lhs: CGRect, with rhs: CGRect) -> CGFloat {
+        let intersection = lhs.intersection(rhs)
+        guard !intersection.isNull else { return 0 }
+        return intersection.width * intersection.height
     }
 }

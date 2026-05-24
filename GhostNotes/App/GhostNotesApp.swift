@@ -57,6 +57,13 @@ struct GhostNotesCommands: Commands {
                 AppDelegate.performFromMenu(.toggleAutoScroll)
             }
             .keyboardShortcut(for: .toggleAutoScroll)
+
+            Divider()
+
+            Button("Snap Under Camera") {
+                AppDelegate.performFromMenu(.snapToCamera)
+            }
+            .keyboardShortcut(for: .snapToCamera)
         }
     }
 }
@@ -119,6 +126,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.decreaseOpacity()
         case .toggleAutoScroll:
             controller.toggleAutoScroll()
+        case .snapToCamera:
+            controller.snapToCameraPosition()
         }
     }
 }

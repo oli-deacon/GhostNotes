@@ -2,6 +2,12 @@ import Foundation
 
 @MainActor
 final class NotesViewModel: ObservableObject {
+    enum ScrollStatus {
+        case ready
+        case scrolling
+        case paused
+    }
+
     private enum Bounds {
         static let minimumOpacity = 0.2
         static let maximumOpacity = 1.0
@@ -52,6 +58,7 @@ final class NotesViewModel: ObservableObject {
 
     @Published private(set) var isAutoScrollEnabled = false
     @Published private(set) var scrollResetToken = 0
+    @Published private(set) var scrollStatus: ScrollStatus = .ready
 
     @Published var isClickThroughEnabled: Bool {
         didSet {
@@ -109,15 +116,18 @@ final class NotesViewModel: ObservableObject {
 
     func toggleAutoScroll() {
         isAutoScrollEnabled.toggle()
+        scrollStatus = isAutoScrollEnabled ? .scrolling : .paused
     }
 
     func stopAutoScroll() {
         isAutoScrollEnabled = false
+        scrollStatus = .paused
     }
 
     func resetScrollPosition() {
         isAutoScrollEnabled = false
         scrollResetToken += 1
+        scrollStatus = .ready
     }
 
     private static func clamp(_ value: Double, min minimum: Double, max maximum: Double) -> Double {

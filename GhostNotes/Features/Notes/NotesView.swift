@@ -3,108 +3,99 @@ import SwiftUI
 
 struct NotesView: View {
     @ObservedObject var viewModel: NotesViewModel
-
-    private let panelCornerRadius: CGFloat = 28
-    private let cardCornerRadius: CGFloat = 22
-    private let sageHighlight = Color(red: 0.78, green: 0.88, blue: 0.80)
-    private let sageTint = Color(red: 0.38, green: 0.56, blue: 0.45)
-    private let sageShadow = Color(red: 0.18, green: 0.28, blue: 0.22)
-
-    private var clickThroughHelpText: String {
-        let shortcut = HotkeyManager.description(for: .toggleClickThrough)
-
-        if viewModel.isClickThroughEnabled {
-            return "Disable click-through (\(shortcut))"
-        }
-
-        return "Enable click-through (\(shortcut))"
-    }
-
-    private var autoScrollHelpText: String {
-        let shortcut = HotkeyManager.description(for: .toggleAutoScroll)
-
-        if viewModel.isAutoScrollEnabled {
-            return "Pause auto-scroll (\(shortcut))"
-        }
-
-        return "Start auto-scroll (\(shortcut))"
-    }
+    @State private var ambientPulseExpanded = false
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            sageHighlight.opacity(0.30),
-                            Color(red: 0.88, green: 0.95, blue: 0.89).opacity(0.14)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .background(
-                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(alignment: .top) {
-                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    sageHighlight.opacity(0.28),
-                                    Color(red: 0.93, green: 0.97, blue: 0.93).opacity(0.03)
-                                ],
-                                startPoint: .top,
-                                endPoint: .center
-                            )
-                        )
-                        .padding(1)
-                        .mask(
-                            RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        )
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
-                        .strokeBorder(sageHighlight.opacity(0.24), lineWidth: 1)
-                )
-                .shadow(color: sageShadow.opacity(0.18), radius: 26, x: 0, y: 18)
-                .shadow(color: sageHighlight.opacity(0.08), radius: 12, x: 0, y: 1)
+            shellBackground
 
-            VStack(spacing: 14) {
+            VStack(spacing: SoftStudioTheme.spacingMedium) {
                 header
 
                 if viewModel.isClickThroughEnabled {
                     clickThroughBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 editorCard
             }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 14)
+            .padding(.horizontal, SoftStudioTheme.spacingMedium)
+            .padding(.bottom, SoftStudioTheme.spacingMedium)
             .padding(.top, 34)
         }
         .frame(minWidth: 420, minHeight: 220)
         .padding(10)
         .background(Color.clear)
+        .onAppear {
+            ambientPulseExpanded = true
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.84), value: viewModel.isClickThroughEnabled)
+        .animation(.spring(response: 0.26, dampingFraction: 0.84), value: viewModel.isAutoScrollEnabled)
+    }
+
+    private var shellBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: SoftStudioTheme.cornerShell, style: .continuous)
+
+        return shape
+            .fill(SoftStudioTheme.shellWash)
+            .background(shape.fill(.ultraThinMaterial))
+            .overlay {
+                shape
+                    .fill(SoftStudioTheme.shellInnerGlow)
+                    .blur(radius: 0.6)
+                    .padding(1)
+                    .mask(shape)
+            }
+            .overlay(alignment: .top) {
+                shape
+                    .fill(SoftStudioTheme.shellTopHighlight)
+                    .padding(1)
+                    .mask(shape)
+            }
+            .overlay {
+                shape
+                    .strokeBorder(SoftStudioTheme.shellStroke, lineWidth: 1)
+            }
+            .overlay {
+                if viewModel.isAutoScrollEnabled {
+                    shape
+                        .strokeBorder(SoftStudioTheme.autoScrollGlow, lineWidth: 1.2)
+                        .blur(radius: ambientPulseExpanded ? 12 : 6)
+                        .scaleEffect(ambientPulseExpanded ? 1.01 : 0.995)
+                        .opacity(ambientPulseExpanded ? 0.34 : 0.16)
+                        .animation(
+                            .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
+                            value: ambientPulseExpanded
+                        )
+                }
+            }
+            .shadow(color: SoftStudioTheme.shadowStrong, radius: 28, x: 0, y: 20)
+            .shadow(color: SoftStudioTheme.shadowSoft, radius: 12, x: 0, y: 2)
     }
 
     private var header: some View {
+        ViewThatFits(in: .horizontal) {
+            headerSingleRow
+            headerTwoRow
+        }
+        .padding(14)
+        .background(
+            SoftStudioCardBackground(
+                cornerRadius: SoftStudioTheme.cornerCard,
+                fill: SoftStudioTheme.headerFill,
+                highlight: SoftStudioTheme.headerHighlight,
+                stroke: SoftStudioTheme.headerStroke
+            )
+        )
+    }
+
+    private var headerSingleRow: some View {
         HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Ghost Notes")
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+            headerTitle
 
-                Text("Floating presenter overlay")
-                    .font(.system(.caption, design: .rounded))
-                    .foregroundStyle(.secondary)
-            }
+            Spacer(minLength: 10)
 
-            Spacer(minLength: 12)
-
-            HStack(spacing: 10) {
+            HStack(spacing: SoftStudioTheme.spacingSmall) {
                 autoScrollControl
                 fontStyleControl
                 fontSizeControl
@@ -112,113 +103,92 @@ struct NotesView: View {
                 clickThroughControl
             }
         }
-        .padding(14)
-        .background(glassCardBackground)
-        .overlay(glassCardStroke)
+    }
+
+    private var headerTwoRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                headerTitle
+                Spacer(minLength: 0)
+                compactClickThroughControl
+            }
+
+            HStack(alignment: .center, spacing: 8) {
+                autoScrollControl
+                fontStyleControl
+                fontSizeControl
+                Spacer(minLength: 0)
+            }
+
+            HStack(alignment: .center, spacing: 8) {
+                opacityControl
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var headerTitle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent : SoftStudioTheme.accentMuted)
+                    .frame(width: 8, height: 8)
+                    .overlay(
+                        Circle()
+                            .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                    )
+                    .shadow(color: viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent.opacity(0.30) : .clear, radius: 6)
+
+                Text("Ghost Notes")
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textPrimary)
+                    .lineLimit(1)
+            }
+
+            Text(statusSubtitle)
+                .font(.system(.caption, design: .rounded, weight: .medium))
+                .foregroundStyle(SoftStudioTheme.textSecondary)
+        }
     }
 
     private var autoScrollControl: some View {
-        HStack(spacing: 8) {
-            Button(action: viewModel.resetScrollPosition) {
-                Image(systemName: "backward.end.fill")
+        SoftStudioChip(isActive: viewModel.isAutoScrollEnabled, minHeight: 40) {
+            ViewThatFits(in: .horizontal) {
+                autoScrollControlContent(label: "Scroll", sliderWidth: 84, showUnit: true)
+                autoScrollControlContent(label: "Scroll", sliderWidth: 72, showUnit: false)
+                autoScrollControlContent(label: "Scr", sliderWidth: 60, showUnit: false)
             }
-            .help("Reset to top")
-            .buttonStyle(GlassIconButtonStyle())
-
-            Button(action: viewModel.toggleAutoScroll) {
-                Image(systemName: viewModel.isAutoScrollEnabled ? "pause.fill" : "play.fill")
-            }
-            .help(autoScrollHelpText)
-            .buttonStyle(GlassIconButtonStyle())
-
-            Text("Scroll")
-                .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Slider(value: $viewModel.autoScrollSpeed, in: 6 ... 100)
-                .frame(width: 84)
-                .help("Scroll speed")
-
-            Text("\(Int(viewModel.autoScrollSpeed))")
-                .font(.system(.caption, design: .rounded).monospacedDigit())
-                .foregroundStyle(.primary)
-                .frame(width: 28, alignment: .trailing)
-
-            Text("pt/s")
-                .font(.system(.caption2, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(controlChipBackground)
     }
 
     private var fontSizeControl: some View {
-        HStack(spacing: 8) {
-            Text("Text")
-                .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Button(action: viewModel.decreaseFontSize) {
-                Image(systemName: "textformat.size.smaller")
+        SoftStudioChip(minHeight: 40) {
+            ViewThatFits(in: .horizontal) {
+                fontSizeControlContent(label: "Text", showUnit: true)
+                fontSizeControlContent(label: "Text", showUnit: false)
+                fontSizeControlContent(label: "", showUnit: false)
             }
-            .help("Smaller text (\(HotkeyManager.description(for: .decreaseFontSize)))")
-            .buttonStyle(GlassIconButtonStyle())
-
-            Text("\(Int(viewModel.fontSize)) pt")
-                .font(.system(.caption, design: .rounded).monospacedDigit())
-                .foregroundStyle(.primary)
-                .frame(minWidth: 42, alignment: .center)
-
-            Button(action: viewModel.increaseFontSize) {
-                Image(systemName: "textformat.size.larger")
-            }
-            .help("Larger text (\(HotkeyManager.description(for: .increaseFontSize)))")
-            .buttonStyle(GlassIconButtonStyle())
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(controlChipBackground)
     }
 
     private var fontStyleControl: some View {
-        HStack(spacing: 8) {
-            Text("Font")
-                .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Picker("Font", selection: $viewModel.notesFontStyle) {
-                ForEach(NotesFontStyle.allCases, id: \.self) { fontStyle in
-                    Text(fontStyle.displayName).tag(fontStyle)
-                }
+        SoftStudioChip(minHeight: 40) {
+            ViewThatFits(in: .horizontal) {
+                fontStyleControlContent(label: "Font", pickerWidth: 96)
+                fontStyleControlContent(label: "", pickerWidth: 84)
+                fontStyleControlContent(label: "", pickerWidth: 72)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(width: 96)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(controlChipBackground)
     }
 
     private var opacityControl: some View {
-        HStack(spacing: 8) {
-            Text("Opacity")
-                .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Slider(value: $viewModel.windowOpacity, in: 0.2 ... 1.0)
-                .frame(width: 92)
-                .help("Adjust opacity (\(HotkeyManager.description(for: .decreaseOpacity)) / \(HotkeyManager.description(for: .increaseOpacity)))")
-
-            Text("\(Int(viewModel.windowOpacity * 100))%")
-                .font(.system(.caption, design: .rounded).monospacedDigit())
-                .foregroundStyle(.primary)
-                .frame(width: 38, alignment: .trailing)
+        SoftStudioChip(minHeight: 40) {
+            ViewThatFits(in: .horizontal) {
+                opacityControlContent(label: "Opacity", sliderWidth: 92, showPercentSymbol: true)
+                opacityControlContent(label: "Opacity", sliderWidth: 78, showPercentSymbol: false)
+                opacityControlContent(label: "", sliderWidth: 64, showPercentSymbol: false)
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(controlChipBackground)
     }
 
     private var clickThroughControl: some View {
@@ -229,70 +199,86 @@ struct NotesView: View {
                 Image(systemName: viewModel.isClickThroughEnabled ? "hand.tap.fill" : "hand.tap")
                     .imageScale(.small)
 
-                Text("Pass-through")
-                    .font(.caption.weight(.medium))
+                ViewThatFits(in: .horizontal) {
+                    Text("Pass-through")
+                    Text("Pass")
+                    Text("PT")
+                }
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             }
-            .foregroundStyle(viewModel.isClickThroughEnabled ? sageTint : .primary)
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(viewModel.isClickThroughEnabled ? sageHighlight.opacity(0.18) : sageHighlight.opacity(0.08))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(viewModel.isClickThroughEnabled ? sageTint.opacity(0.30) : sageHighlight.opacity(0.16), lineWidth: 1)
-            )
+            .padding(.vertical, 10)
         }
         .help(clickThroughHelpText)
-        .buttonStyle(.plain)
+        .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.isClickThroughEnabled))
+    }
+
+    private var compactClickThroughControl: some View {
+        Button {
+            viewModel.toggleClickThrough()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: viewModel.isClickThroughEnabled ? "hand.tap.fill" : "hand.tap")
+                    .imageScale(.small)
+
+                ViewThatFits(in: .horizontal) {
+                    Text("Pass-through")
+                    Text("Pass")
+                    Text("PT")
+                }
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
+        .help(clickThroughHelpText)
+        .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.isClickThroughEnabled))
     }
 
     private var clickThroughBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "hand.tap.fill")
-                .foregroundStyle(sageTint)
+                .foregroundStyle(SoftStudioTheme.accent)
                 .imageScale(.medium)
+                .frame(width: 22)
 
-            Text("Pass-through is on. Use \(HotkeyManager.description(for: .toggleClickThrough)) to interact again.")
-                .font(.system(.caption, design: .rounded))
-                .foregroundStyle(.primary.opacity(0.85))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pass-through is on")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textPrimary)
+
+                Text("Use \(HotkeyManager.description(for: .toggleClickThrough)) to interact with Ghost Notes again.")
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(sageHighlight.opacity(0.14))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(sageTint.opacity(0.22), lineWidth: 1)
+            SoftStudioCardBackground(
+                cornerRadius: SoftStudioTheme.cornerChip,
+                fill: SoftStudioTheme.bannerFill,
+                highlight: SoftStudioTheme.bannerHighlight,
+                stroke: SoftStudioTheme.bannerStroke
+            )
         )
     }
 
     private var editorCard: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            sageHighlight.opacity(0.16),
-                            Color(red: 0.88, green: 0.94, blue: 0.89).opacity(0.07)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .background(
-                    RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                        .fill(.thinMaterial)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
-                        .strokeBorder(sageHighlight.opacity(0.18), lineWidth: 1)
-                )
+            SoftStudioCardBackground(
+                cornerRadius: SoftStudioTheme.cornerEditor,
+                fill: SoftStudioTheme.editorFill,
+                highlight: SoftStudioTheme.editorHighlight,
+                stroke: SoftStudioTheme.editorStroke
+            )
 
             AutoScrollingTextEditor(
                 text: $viewModel.notesText,
@@ -303,58 +289,169 @@ struct NotesView: View {
                 resetToken: viewModel.scrollResetToken,
                 onAutoScrollFinished: viewModel.stopAutoScroll
             )
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
 
             if viewModel.notesText.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Paste your presenter notes here.")
-                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: viewModel.fontSize, weight: .medium))
-                        .foregroundStyle(.primary.opacity(0.72))
+                    Text("Settle your notes here before you go on stage.")
+                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: viewModel.fontSize + 2, weight: .medium))
+                        .foregroundStyle(SoftStudioTheme.textPrimary.opacity(0.84))
 
-                    Text("They stay local on this Mac and reopen the next time you launch the app.")
-                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: max(viewModel.fontSize - 2, 12), weight: .regular))
-                        .foregroundStyle(.secondary)
+                    Text("Everything stays on this Mac, and your notes will be waiting when you open Ghost Notes again.")
+                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: max(viewModel.fontSize - 1, 12), weight: .regular))
+                        .foregroundStyle(SoftStudioTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 22)
-                .padding(.vertical, 24)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 28)
                 .allowsHitTesting(false)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var glassCardBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        sageHighlight.opacity(0.18),
-                        Color(red: 0.88, green: 0.94, blue: 0.89).opacity(0.10)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.thinMaterial)
-            )
+    private var clickThroughHelpText: String {
+        let shortcut = HotkeyManager.description(for: .toggleClickThrough)
+        return viewModel.isClickThroughEnabled
+            ? "Disable click-through (\(shortcut))"
+            : "Enable click-through (\(shortcut))"
     }
 
-    private var glassCardStroke: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .strokeBorder(sageHighlight.opacity(0.18), lineWidth: 1)
+    private var autoScrollHelpText: String {
+        let shortcut = HotkeyManager.description(for: .toggleAutoScroll)
+        return viewModel.isAutoScrollEnabled
+            ? "Pause auto-scroll (\(shortcut))"
+            : "Start auto-scroll (\(shortcut))"
     }
 
-    private var controlChipBackground: some View {
-        Capsule(style: .continuous)
-            .fill(sageHighlight.opacity(0.08))
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(sageHighlight.opacity(0.14), lineWidth: 1)
-            )
+    private var statusSubtitle: String {
+        if viewModel.isClickThroughEnabled {
+            return "Pass-through enabled"
+        }
+
+        switch viewModel.scrollStatus {
+        case .ready:
+            return "Ready to present"
+        case .scrolling:
+            return "Auto-scroll on"
+        case .paused:
+            return "Paused at current position"
+        }
+    }
+
+    private func autoScrollControlContent(label: String, sliderWidth: CGFloat, showUnit: Bool) -> some View {
+        HStack(spacing: 8) {
+            Button(action: viewModel.resetScrollPosition) {
+                Image(systemName: "backward.end.fill")
+            }
+            .help("Reset to top")
+            .buttonStyle(SoftStudioIconButtonStyle())
+
+            Button(action: viewModel.toggleAutoScroll) {
+                Image(systemName: viewModel.isAutoScrollEnabled ? "pause.fill" : "play.fill")
+            }
+            .help(autoScrollHelpText)
+            .buttonStyle(SoftStudioIconButtonStyle(isActive: viewModel.isAutoScrollEnabled))
+
+            Text(label)
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .foregroundStyle(SoftStudioTheme.textSecondary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Slider(value: $viewModel.autoScrollSpeed, in: 6 ... 100)
+                .frame(width: sliderWidth)
+                .tint(SoftStudioTheme.accent)
+                .help("Scroll speed")
+
+            Text("\(Int(viewModel.autoScrollSpeed))")
+                .font(.system(.caption, design: .rounded).monospacedDigit())
+                .foregroundStyle(SoftStudioTheme.textPrimary)
+                .frame(width: 28, alignment: .trailing)
+
+            if showUnit {
+                Text("pt/s")
+                    .font(.system(.caption2, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+    }
+
+    private func fontSizeControlContent(label: String, showUnit: Bool) -> some View {
+        HStack(spacing: 8) {
+            if !label.isEmpty {
+                Text(label)
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            Button(action: viewModel.decreaseFontSize) {
+                Image(systemName: "textformat.size.smaller")
+            }
+            .help("Smaller text (\(HotkeyManager.description(for: .decreaseFontSize)))")
+            .buttonStyle(SoftStudioIconButtonStyle())
+
+            Text(showUnit ? "\(Int(viewModel.fontSize)) pt" : "\(Int(viewModel.fontSize))")
+                .font(.system(.caption, design: .rounded).monospacedDigit())
+                .foregroundStyle(SoftStudioTheme.textPrimary)
+                .frame(minWidth: showUnit ? 42 : 24, alignment: .center)
+                .lineLimit(1)
+
+            Button(action: viewModel.increaseFontSize) {
+                Image(systemName: "textformat.size.larger")
+            }
+            .help("Larger text (\(HotkeyManager.description(for: .increaseFontSize)))")
+            .buttonStyle(SoftStudioIconButtonStyle())
+        }
+    }
+
+    private func fontStyleControlContent(label: String, pickerWidth: CGFloat) -> some View {
+        HStack(spacing: 8) {
+            if !label.isEmpty {
+                Text(label)
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            Picker("Font", selection: $viewModel.notesFontStyle) {
+                ForEach(NotesFontStyle.allCases, id: \.self) { fontStyle in
+                    Text(fontStyle.displayName).tag(fontStyle)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: pickerWidth)
+        }
+    }
+
+    private func opacityControlContent(label: String, sliderWidth: CGFloat, showPercentSymbol: Bool) -> some View {
+        HStack(spacing: 8) {
+            if !label.isEmpty {
+                Text(label)
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            Slider(value: $viewModel.windowOpacity, in: 0.2 ... 1.0)
+                .frame(width: sliderWidth)
+                .tint(SoftStudioTheme.accent)
+                .help("Adjust opacity (\(HotkeyManager.description(for: .decreaseOpacity)) / \(HotkeyManager.description(for: .increaseOpacity)))")
+
+            Text(showPercentSymbol ? "\(Int(viewModel.windowOpacity * 100))%" : "\(Int(viewModel.windowOpacity * 100))")
+                .font(.system(.caption, design: .rounded).monospacedDigit())
+                .foregroundStyle(SoftStudioTheme.textPrimary)
+                .frame(width: showPercentSymbol ? 38 : 24, alignment: .trailing)
+                .lineLimit(1)
+        }
     }
 
     private func swiftUIFont(for fontStyle: NotesFontStyle, size: Double, weight: Font.Weight) -> Font {
@@ -380,7 +477,12 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
     let onAutoScrollFinished: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, onAutoScrollFinished: onAutoScrollFinished)
+        Coordinator(
+            text: $text,
+            initialFontSize: fontSize,
+            initialFontStyle: fontStyle,
+            onAutoScrollFinished: onAutoScrollFinished
+        )
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -403,11 +505,10 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         textView.isContinuousSpellCheckingEnabled = false
         textView.drawsBackground = false
         textView.backgroundColor = .clear
-        textView.textColor = .labelColor
-        textView.insertionPointColor = .labelColor
-        textView.font = nsFont(for: fontStyle, size: fontSize)
+        textView.textColor = SoftStudioThemeNS.textPrimary
+        textView.insertionPointColor = SoftStudioThemeNS.textPrimary
         textView.string = text
-        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.textContainerInset = NSSize(width: 14, height: 16)
         textView.isHorizontallyResizable = false
         textView.isVerticallyResizable = true
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
@@ -415,6 +516,8 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
         textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.lineFragmentPadding = 0
+        context.coordinator.applyTypographyIfNeeded(to: textView, fontSize: fontSize, fontStyle: fontStyle, forceTextStorageStyling: true)
 
         scrollView.documentView = textView
         context.coordinator.attach(scrollView: scrollView, textView: textView)
@@ -428,15 +531,19 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        var shouldRestyleTextStorage = false
 
         if textView.string != text {
             textView.string = text
+            shouldRestyleTextStorage = true
         }
 
-        let font = nsFont(for: fontStyle, size: fontSize)
-        if textView.font != font {
-            textView.font = font
-        }
+        context.coordinator.applyTypographyIfNeeded(
+            to: textView,
+            fontSize: fontSize,
+            fontStyle: fontStyle,
+            forceTextStorageStyling: shouldRestyleTextStorage
+        )
 
         context.coordinator.update(
             isAutoScrollEnabled: isAutoScrollEnabled,
@@ -446,6 +553,11 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
+        private struct TypographyState: Equatable {
+            let fontStyle: NotesFontStyle
+            let fontSize: Double
+        }
+
         private static let autoScrollSpeedMultiplier = 0.65
 
         private let text: Binding<String>
@@ -456,9 +568,16 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         private var autoScrollSpeed = OverlaySettings.defaultAutoScrollSpeed
         private var isAutoScrollEnabled = false
         private var lastResetToken = 0
+        private var lastTypographyState: TypographyState?
 
-        init(text: Binding<String>, onAutoScrollFinished: @escaping () -> Void) {
+        init(
+            text: Binding<String>,
+            initialFontSize: Double,
+            initialFontStyle: NotesFontStyle,
+            onAutoScrollFinished: @escaping () -> Void
+        ) {
             self.text = text
+            self.lastTypographyState = TypographyState(fontStyle: initialFontStyle, fontSize: initialFontSize)
             self.onAutoScrollFinished = onAutoScrollFinished
         }
 
@@ -488,6 +607,47 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView else { return }
             text.wrappedValue = textView.string
+        }
+
+        func applyTypographyIfNeeded(
+            to textView: NSTextView,
+            fontSize: Double,
+            fontStyle: NotesFontStyle,
+            forceTextStorageStyling: Bool
+        ) {
+            let nextState = TypographyState(fontStyle: fontStyle, fontSize: fontSize)
+            let didTypographyChange = lastTypographyState != nextState
+
+            guard didTypographyChange || forceTextStorageStyling else { return }
+
+            let font = AutoScrollingTextEditor.nsFont(for: fontStyle, size: fontSize + 1)
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineHeightMultiple = 1.18
+            paragraphStyle.paragraphSpacing = 7
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: SoftStudioThemeNS.textPrimary,
+                .paragraphStyle: paragraphStyle
+            ]
+
+            textView.font = font
+            textView.textColor = SoftStudioThemeNS.textPrimary
+            textView.insertionPointColor = SoftStudioThemeNS.textPrimary
+            textView.defaultParagraphStyle = paragraphStyle
+            textView.typingAttributes = attributes
+
+            if didTypographyChange || forceTextStorageStyling {
+                if let textStorage = textView.textStorage {
+                    let selectedRange = textView.selectedRange()
+                    textStorage.beginEditing()
+                    textStorage.setAttributes(attributes, range: NSRange(location: 0, length: textStorage.length))
+                    textStorage.endEditing()
+                    textView.setSelectedRange(selectedRange)
+                }
+            }
+
+            lastTypographyState = nextState
         }
 
         private func startTimer() {
@@ -555,7 +715,7 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         }
     }
 
-    private func nsFont(for fontStyle: NotesFontStyle, size: Double) -> NSFont {
+    private static func nsFont(for fontStyle: NotesFontStyle, size: Double) -> NSFont {
         let baseFont = NSFont.systemFont(ofSize: size, weight: .regular)
 
         switch fontStyle {
@@ -570,7 +730,7 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         }
     }
 
-    private func font(withDesign design: NSFontDescriptor.SystemDesign, basedOn font: NSFont) -> NSFont? {
+    private static func font(withDesign design: NSFontDescriptor.SystemDesign, basedOn font: NSFont) -> NSFont? {
         guard let descriptor = font.fontDescriptor.withDesign(design) else {
             return nil
         }
@@ -579,21 +739,284 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
     }
 }
 
-private struct GlassIconButtonStyle: ButtonStyle {
+private enum SoftStudioTheme {
+    static let backgroundWash = Color(red: 0.92, green: 0.96, blue: 0.93)
+    static let glassFill = Color(red: 0.97, green: 0.99, blue: 0.97)
+    static let cardFill = Color(red: 0.94, green: 0.97, blue: 0.94)
+    static let accent = Color(red: 0.35, green: 0.56, blue: 0.46)
+    static let accentMuted = Color(red: 0.66, green: 0.76, blue: 0.70)
+    static let textPrimary = Color(red: 0.16, green: 0.23, blue: 0.20)
+    static let textSecondary = Color(red: 0.36, green: 0.46, blue: 0.40)
+    static let shadowStrong = Color.black.opacity(0.14)
+    static let shadowSoft = Color.black.opacity(0.05)
+
+    static let cornerShell: CGFloat = 30
+    static let cornerCard: CGFloat = 24
+    static let cornerEditor: CGFloat = 26
+    static let cornerChip: CGFloat = 18
+
+    static let spacingSmall: CGFloat = 10
+    static let spacingMedium: CGFloat = 14
+
+    static let shellWash = LinearGradient(
+        colors: [
+            backgroundWash.opacity(0.64),
+            glassFill.opacity(0.16)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let shellInnerGlow = LinearGradient(
+        colors: [
+            Color.white.opacity(0.20),
+            accentMuted.opacity(0.04)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let shellTopHighlight = LinearGradient(
+        colors: [
+            Color.white.opacity(0.34),
+            Color.white.opacity(0.04)
+        ],
+        startPoint: .top,
+        endPoint: .center
+    )
+
+    static let shellStroke = accentMuted.opacity(0.22)
+    static let autoScrollGlow = accent.opacity(0.50)
+
+    static let headerFill = LinearGradient(
+        colors: [
+            glassFill.opacity(0.84),
+            backgroundWash.opacity(0.46)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let headerHighlight = LinearGradient(
+        colors: [
+            Color.white.opacity(0.28),
+            accentMuted.opacity(0.04)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let headerStroke = accentMuted.opacity(0.20)
+
+    static let editorFill = LinearGradient(
+        colors: [
+            cardFill.opacity(0.86),
+            Color.white.opacity(0.80)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let editorHighlight = LinearGradient(
+        colors: [
+            Color.white.opacity(0.36),
+            accentMuted.opacity(0.02)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let editorStroke = accentMuted.opacity(0.16)
+
+    static let bannerFill = LinearGradient(
+        colors: [
+            accent.opacity(0.12),
+            cardFill.opacity(0.52)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let bannerHighlight = LinearGradient(
+        colors: [
+            Color.white.opacity(0.22),
+            accentMuted.opacity(0.03)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let bannerStroke = accent.opacity(0.24)
+
+    static let chipFill = LinearGradient(
+        colors: [
+            Color.white.opacity(0.22),
+            backgroundWash.opacity(0.24)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let chipActiveFill = LinearGradient(
+        colors: [
+            accent.opacity(0.14),
+            glassFill.opacity(0.30)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+}
+
+private enum SoftStudioThemeNS {
+    static let textPrimary = NSColor(calibratedRed: 0.16, green: 0.23, blue: 0.20, alpha: 1.0)
+}
+
+private struct SoftStudioCardBackground: View {
+    let cornerRadius: CGFloat
+    let fill: LinearGradient
+    let highlight: LinearGradient
+    let stroke: Color
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+
+        shape
+            .fill(fill)
+            .background(shape.fill(.thinMaterial))
+            .overlay {
+                shape
+                    .fill(highlight)
+                    .padding(1)
+                    .mask(shape)
+            }
+            .overlay {
+                shape.strokeBorder(stroke, lineWidth: 1)
+            }
+    }
+}
+
+private struct SoftStudioChip<Content: View>: View {
+    let isActive: Bool
+    let minHeight: CGFloat
+    @ViewBuilder let content: Content
+
+    @State private var isHovered = false
+
+    init(
+        isActive: Bool = false,
+        minHeight: CGFloat = 36,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.isActive = isActive
+        self.minHeight = minHeight
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(minHeight: minHeight)
+            .background(background)
+            .scaleEffect(isHovered ? 1.01 : 1.0)
+            .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.10) : .clear, radius: 8, y: 2)
+            .onHover { hovering in
+                isHovered = hovering
+            }
+            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
+    }
+
+    private var background: some View {
+        Capsule(style: .continuous)
+            .fill(isActive ? SoftStudioTheme.chipActiveFill : SoftStudioTheme.chipFill)
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        isActive ? SoftStudioTheme.accent.opacity(0.24) : SoftStudioTheme.accentMuted.opacity(0.18),
+                        lineWidth: 1
+                    )
+            )
+    }
+}
+
+private struct SoftStudioIconButtonStyle: ButtonStyle {
+    var isActive = false
+
     func makeBody(configuration: Configuration) -> some View {
+        SoftStudioIconButtonBody(configuration: configuration, isActive: isActive)
+    }
+}
+
+private struct SoftStudioIconButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let isActive: Bool
+
+    @State private var isHovered = false
+
+    var body: some View {
         configuration.label
             .font(.system(.caption, design: .rounded, weight: .semibold))
-            .foregroundStyle(.primary)
-            .padding(6)
+            .foregroundStyle(isActive ? SoftStudioTheme.accent : SoftStudioTheme.textPrimary)
+            .padding(7)
             .background(
                 Circle()
-                    .fill(Color(red: 0.84, green: 0.92, blue: 0.85).opacity(configuration.isPressed ? 0.20 : 0.11))
+                    .fill(
+                        isActive
+                            ? SoftStudioTheme.accent.opacity(configuration.isPressed ? 0.26 : 0.18)
+                            : Color.white.opacity(configuration.isPressed ? 0.24 : (isHovered ? 0.19 : 0.12))
+                    )
             )
             .overlay(
                 Circle()
-                    .strokeBorder(Color(red: 0.74, green: 0.87, blue: 0.77).opacity(0.16), lineWidth: 1)
+                    .strokeBorder(
+                        isActive ? SoftStudioTheme.accent.opacity(0.26) : SoftStudioTheme.accentMuted.opacity(0.20),
+                        lineWidth: 1
+                    )
             )
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.22, dampingFraction: 0.82), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.04 : 1.0))
+            .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.16) : .clear, radius: 6, y: 1)
+            .onHover { hovering in
+                isHovered = hovering
+            }
+            .animation(.spring(response: 0.22, dampingFraction: 0.80), value: configuration.isPressed)
+            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
+    }
+}
+
+private struct SoftStudioToggleButtonStyle: ButtonStyle {
+    let isActive: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        SoftStudioToggleButtonBody(configuration: configuration, isActive: isActive)
+    }
+}
+
+private struct SoftStudioToggleButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let isActive: Bool
+
+    @State private var isHovered = false
+
+    var body: some View {
+        configuration.label
+            .foregroundStyle(isActive ? SoftStudioTheme.accent : SoftStudioTheme.textPrimary)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isActive ? SoftStudioTheme.chipActiveFill : SoftStudioTheme.chipFill)
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        isActive ? SoftStudioTheme.accent.opacity(0.28) : SoftStudioTheme.accentMuted.opacity(0.18),
+                        lineWidth: 1
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : (isHovered ? 1.01 : 1.0))
+            .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.12) : .clear, radius: 8, y: 2)
+            .onHover { hovering in
+                isHovered = hovering
+            }
+            .animation(.spring(response: 0.22, dampingFraction: 0.80), value: configuration.isPressed)
+            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
     }
 }

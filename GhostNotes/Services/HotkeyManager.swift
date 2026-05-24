@@ -12,6 +12,7 @@ final class HotkeyManager {
         case increaseOpacity = 5
         case decreaseOpacity = 6
         case toggleAutoScroll = 7
+        case snapToCamera = 8
     }
 
     struct Shortcut {
@@ -62,6 +63,8 @@ final class HotkeyManager {
             "Control-Option-Command-["
         case .toggleAutoScroll:
             "Control-Option-Command-P"
+        case .snapToCamera:
+            "Control-Option-Command-C"
         }
     }
 
@@ -83,6 +86,8 @@ final class HotkeyManager {
             return MenuShortcut(key: "[", modifiers: modifiers)
         case .toggleAutoScroll:
             return MenuShortcut(key: "p", modifiers: modifiers)
+        case .snapToCamera:
+            return MenuShortcut(key: "c", modifiers: modifiers)
         }
     }
 
@@ -123,6 +128,8 @@ final class HotkeyManager {
             return Shortcut(keyCode: UInt32(kVK_ANSI_LeftBracket), modifiers: modifiers)
         case .toggleAutoScroll:
             return Shortcut(keyCode: UInt32(kVK_ANSI_P), modifiers: modifiers)
+        case .snapToCamera:
+            return Shortcut(keyCode: UInt32(kVK_ANSI_C), modifiers: modifiers)
         }
     }
 
