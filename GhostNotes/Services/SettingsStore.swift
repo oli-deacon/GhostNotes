@@ -6,6 +6,8 @@ final class SettingsStore {
         static let notesText = "notesText"
         static let windowOpacity = "windowOpacity"
         static let fontSize = "fontSize"
+        static let autoScrollSpeed = "autoScrollSpeed"
+        static let notesFontStyle = "notesFontStyle"
         static let windowFrame = "windowFrame"
         static let isClickThroughEnabled = "isClickThroughEnabled"
     }
@@ -21,6 +23,8 @@ final class SettingsStore {
             notesText: userDefaults.string(forKey: Keys.notesText) ?? "",
             windowOpacity: loadOpacity(),
             fontSize: loadFontSize(),
+            autoScrollSpeed: loadAutoScrollSpeed(),
+            notesFontStyle: loadNotesFontStyle(),
             windowFrame: loadWindowFrame(),
             isClickThroughEnabled: userDefaults.bool(forKey: Keys.isClickThroughEnabled)
         )
@@ -40,6 +44,14 @@ final class SettingsStore {
 
     func saveFontSize(_ fontSize: Double) {
         userDefaults.set(clamp(fontSize, min: 12, max: 28), forKey: Keys.fontSize)
+    }
+
+    func saveAutoScrollSpeed(_ speed: Double) {
+        userDefaults.set(clamp(speed, min: 6, max: 100), forKey: Keys.autoScrollSpeed)
+    }
+
+    func saveNotesFontStyle(_ fontStyle: NotesFontStyle) {
+        userDefaults.set(fontStyle.rawValue, forKey: Keys.notesFontStyle)
     }
 
     func saveClickThroughEnabled(_ isEnabled: Bool) {
@@ -63,6 +75,20 @@ final class SettingsStore {
     private func loadFontSize() -> Double {
         let storedFontSize = userDefaults.object(forKey: Keys.fontSize) as? Double ?? OverlaySettings.defaultFontSize
         return clamp(storedFontSize, min: 12, max: 28)
+    }
+
+    private func loadAutoScrollSpeed() -> Double {
+        let storedSpeed = userDefaults.object(forKey: Keys.autoScrollSpeed) as? Double ?? OverlaySettings.defaultAutoScrollSpeed
+        return clamp(storedSpeed, min: 6, max: 100)
+    }
+
+    private func loadNotesFontStyle() -> NotesFontStyle {
+        guard let rawValue = userDefaults.string(forKey: Keys.notesFontStyle),
+              let fontStyle = NotesFontStyle(rawValue: rawValue) else {
+            return OverlaySettings.defaultNotesFontStyle
+        }
+
+        return fontStyle
     }
 
     private func clamp(_ value: Double, min minimum: Double, max maximum: Double) -> Double {

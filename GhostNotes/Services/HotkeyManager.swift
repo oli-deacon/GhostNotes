@@ -11,6 +11,7 @@ final class HotkeyManager {
         case decreaseFontSize = 4
         case increaseOpacity = 5
         case decreaseOpacity = 6
+        case toggleAutoScroll = 7
     }
 
     struct Shortcut {
@@ -59,6 +60,8 @@ final class HotkeyManager {
             "Control-Option-Command-]"
         case .decreaseOpacity:
             "Control-Option-Command-["
+        case .toggleAutoScroll:
+            "Control-Option-Command-P"
         }
     }
 
@@ -78,13 +81,15 @@ final class HotkeyManager {
             return MenuShortcut(key: "]", modifiers: modifiers)
         case .decreaseOpacity:
             return MenuShortcut(key: "[", modifiers: modifiers)
+        case .toggleAutoScroll:
+            return MenuShortcut(key: "p", modifiers: modifiers)
         }
     }
 
     private func registerHotkeys() {
         for action in Action.allCases {
             var hotKeyRef: EventHotKeyRef?
-            var hotKeyID = EventHotKeyID(signature: Self.signature, id: action.rawValue)
+            let hotKeyID = EventHotKeyID(signature: Self.signature, id: action.rawValue)
 
             let shortcut = shortcut(for: action)
             RegisterEventHotKey(
@@ -116,6 +121,8 @@ final class HotkeyManager {
             return Shortcut(keyCode: UInt32(kVK_ANSI_RightBracket), modifiers: modifiers)
         case .decreaseOpacity:
             return Shortcut(keyCode: UInt32(kVK_ANSI_LeftBracket), modifiers: modifiers)
+        case .toggleAutoScroll:
+            return Shortcut(keyCode: UInt32(kVK_ANSI_P), modifiers: modifiers)
         }
     }
 

@@ -1,8 +1,8 @@
+import AppKit
 import SwiftUI
 
 struct NotesView: View {
     @ObservedObject var viewModel: NotesViewModel
-    @FocusState private var isEditorFocused: Bool
 
     private let panelCornerRadius: CGFloat = 28
     private let cardCornerRadius: CGFloat = 22
@@ -18,6 +18,16 @@ struct NotesView: View {
         }
 
         return "Enable click-through (\(shortcut))"
+    }
+
+    private var autoScrollHelpText: String {
+        let shortcut = HotkeyManager.description(for: .toggleAutoScroll)
+
+        if viewModel.isAutoScrollEnabled {
+            return "Pause auto-scroll (\(shortcut))"
+        }
+
+        return "Start auto-scroll (\(shortcut))"
     }
 
     var body: some View {
@@ -77,13 +87,6 @@ struct NotesView: View {
         .frame(minWidth: 420, minHeight: 220)
         .padding(10)
         .background(Color.clear)
-        .onAppear {
-            DispatchQueue.main.async {
-                if !viewModel.isClickThroughEnabled {
-                    isEditorFocused = true
-                }
-            }
-        }
     }
 
     private var header: some View {
@@ -102,6 +105,8 @@ struct NotesView: View {
             Spacer(minLength: 12)
 
             HStack(spacing: 10) {
+                autoScrollControl
+                fontStyleControl
                 fontSizeControl
                 opacityControl
                 clickThroughControl
@@ -110,6 +115,42 @@ struct NotesView: View {
         .padding(14)
         .background(glassCardBackground)
         .overlay(glassCardStroke)
+    }
+
+    private var autoScrollControl: some View {
+        HStack(spacing: 8) {
+            Button(action: viewModel.resetScrollPosition) {
+                Image(systemName: "backward.end.fill")
+            }
+            .help("Reset to top")
+            .buttonStyle(GlassIconButtonStyle())
+
+            Button(action: viewModel.toggleAutoScroll) {
+                Image(systemName: viewModel.isAutoScrollEnabled ? "pause.fill" : "play.fill")
+            }
+            .help(autoScrollHelpText)
+            .buttonStyle(GlassIconButtonStyle())
+
+            Text("Scroll")
+                .font(.system(.caption, design: .rounded, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            Slider(value: $viewModel.autoScrollSpeed, in: 6 ... 100)
+                .frame(width: 84)
+                .help("Scroll speed")
+
+            Text("\(Int(viewModel.autoScrollSpeed))")
+                .font(.system(.caption, design: .rounded).monospacedDigit())
+                .foregroundStyle(.primary)
+                .frame(width: 28, alignment: .trailing)
+
+            Text("pt/s")
+                .font(.system(.caption2, design: .rounded, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(controlChipBackground)
     }
 
     private var fontSizeControl: some View {
@@ -134,6 +175,26 @@ struct NotesView: View {
             }
             .help("Larger text (\(HotkeyManager.description(for: .increaseFontSize)))")
             .buttonStyle(GlassIconButtonStyle())
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(controlChipBackground)
+    }
+
+    private var fontStyleControl: some View {
+        HStack(spacing: 8) {
+            Text("Font")
+                .font(.system(.caption, design: .rounded, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            Picker("Font", selection: $viewModel.notesFontStyle) {
+                ForEach(NotesFontStyle.allCases, id: \.self) { fontStyle in
+                    Text(fontStyle.displayName).tag(fontStyle)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 96)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -233,14 +294,26 @@ struct NotesView: View {
                         .strokeBorder(sageHighlight.opacity(0.18), lineWidth: 1)
                 )
 
+            AutoScrollingTextEditor(
+                text: $viewModel.notesText,
+                fontSize: viewModel.fontSize,
+                fontStyle: viewModel.notesFontStyle,
+                isAutoScrollEnabled: viewModel.isAutoScrollEnabled,
+                autoScrollSpeed: viewModel.autoScrollSpeed,
+                resetToken: viewModel.scrollResetToken,
+                onAutoScrollFinished: viewModel.stopAutoScroll
+            )
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+
             if viewModel.notesText.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Paste your presenter notes here.")
-                        .font(.system(size: viewModel.fontSize, weight: .medium, design: .rounded))
+                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: viewModel.fontSize, weight: .medium))
                         .foregroundStyle(.primary.opacity(0.72))
 
                     Text("They stay local on this Mac and reopen the next time you launch the app.")
-                        .font(.system(size: max(viewModel.fontSize - 2, 12), weight: .regular, design: .rounded))
+                        .font(swiftUIFont(for: viewModel.notesFontStyle, size: max(viewModel.fontSize - 2, 12), weight: .regular))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -248,15 +321,6 @@ struct NotesView: View {
                 .padding(.vertical, 24)
                 .allowsHitTesting(false)
             }
-
-            TextEditor(text: $viewModel.notesText)
-                .font(.system(size: viewModel.fontSize, weight: .regular, design: .rounded))
-                .foregroundStyle(.primary)
-                .scrollContentBackground(.hidden)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 18)
-                .focused($isEditorFocused)
-                .background(Color.clear)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -291,6 +355,227 @@ struct NotesView: View {
                 Capsule(style: .continuous)
                     .strokeBorder(sageHighlight.opacity(0.14), lineWidth: 1)
             )
+    }
+
+    private func swiftUIFont(for fontStyle: NotesFontStyle, size: Double, weight: Font.Weight) -> Font {
+        switch fontStyle {
+        case .monospaced:
+            return .system(size: size, weight: weight, design: .monospaced)
+        case .rounded:
+            return .system(size: size, weight: weight, design: .rounded)
+        case .serif:
+            return .system(size: size, weight: weight, design: .serif)
+        }
+    }
+}
+
+private struct AutoScrollingTextEditor: NSViewRepresentable {
+    @Binding var text: String
+
+    let fontSize: Double
+    let fontStyle: NotesFontStyle
+    let isAutoScrollEnabled: Bool
+    let autoScrollSpeed: Double
+    let resetToken: Int
+    let onAutoScrollFinished: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, onAutoScrollFinished: onAutoScrollFinished)
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.scrollerStyle = .overlay
+
+        let textView = NSTextView()
+        textView.delegate = context.coordinator
+        textView.isRichText = false
+        textView.importsGraphics = false
+        textView.allowsUndo = true
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+        textView.isContinuousSpellCheckingEnabled = false
+        textView.drawsBackground = false
+        textView.backgroundColor = .clear
+        textView.textColor = .labelColor
+        textView.insertionPointColor = .labelColor
+        textView.font = nsFont(for: fontStyle, size: fontSize)
+        textView.string = text
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isHorizontallyResizable = false
+        textView.isVerticallyResizable = true
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+
+        scrollView.documentView = textView
+        context.coordinator.attach(scrollView: scrollView, textView: textView)
+
+        DispatchQueue.main.async {
+            scrollView.window?.makeFirstResponder(textView)
+        }
+
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+
+        if textView.string != text {
+            textView.string = text
+        }
+
+        let font = nsFont(for: fontStyle, size: fontSize)
+        if textView.font != font {
+            textView.font = font
+        }
+
+        context.coordinator.update(
+            isAutoScrollEnabled: isAutoScrollEnabled,
+            autoScrollSpeed: autoScrollSpeed,
+            resetToken: resetToken
+        )
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        private static let autoScrollSpeedMultiplier = 0.65
+
+        private let text: Binding<String>
+        private let onAutoScrollFinished: () -> Void
+        private weak var scrollView: NSScrollView?
+        private weak var textView: NSTextView?
+        private var timer: Timer?
+        private var autoScrollSpeed = OverlaySettings.defaultAutoScrollSpeed
+        private var isAutoScrollEnabled = false
+        private var lastResetToken = 0
+
+        init(text: Binding<String>, onAutoScrollFinished: @escaping () -> Void) {
+            self.text = text
+            self.onAutoScrollFinished = onAutoScrollFinished
+        }
+
+        func attach(scrollView: NSScrollView, textView: NSTextView) {
+            self.scrollView = scrollView
+            self.textView = textView
+        }
+
+        func update(isAutoScrollEnabled: Bool, autoScrollSpeed: Double, resetToken: Int) {
+            self.autoScrollSpeed = autoScrollSpeed
+
+            if resetToken != lastResetToken {
+                lastResetToken = resetToken
+                scrollToTop()
+            }
+
+            guard self.isAutoScrollEnabled != isAutoScrollEnabled else { return }
+            self.isAutoScrollEnabled = isAutoScrollEnabled
+
+            if isAutoScrollEnabled {
+                startTimer()
+            } else {
+                stopTimer()
+            }
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView else { return }
+            text.wrappedValue = textView.string
+        }
+
+        private func startTimer() {
+            stopTimer()
+
+            let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+                self?.tick()
+            }
+
+            self.timer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        }
+
+        private func stopTimer() {
+            timer?.invalidate()
+            timer = nil
+        }
+
+        private func tick() {
+            guard let scrollView, let documentView = scrollView.documentView else {
+                finishAutoScroll()
+                return
+            }
+
+            let clipView = scrollView.contentView
+            let visibleHeight = clipView.bounds.height
+            let maxOffsetY = max(documentView.bounds.height - visibleHeight, 0)
+
+            guard maxOffsetY > 0 else {
+                finishAutoScroll()
+                return
+            }
+
+            let currentOffsetY = clipView.bounds.origin.y
+            let pointsPerFrame = autoScrollSpeed * Self.autoScrollSpeedMultiplier / 30.0
+            let nextOffsetY = min(currentOffsetY + CGFloat(pointsPerFrame), maxOffsetY)
+
+            guard nextOffsetY > currentOffsetY else {
+                finishAutoScroll()
+                return
+            }
+
+            clipView.setBoundsOrigin(NSPoint(x: clipView.bounds.origin.x, y: nextOffsetY))
+            scrollView.reflectScrolledClipView(clipView)
+
+            if nextOffsetY >= maxOffsetY {
+                finishAutoScroll()
+            }
+        }
+
+        private func scrollToTop() {
+            guard let scrollView else { return }
+
+            let clipView = scrollView.contentView
+            clipView.setBoundsOrigin(.zero)
+            scrollView.reflectScrolledClipView(clipView)
+        }
+
+        private func finishAutoScroll() {
+            guard isAutoScrollEnabled else { return }
+
+            isAutoScrollEnabled = false
+            stopTimer()
+            onAutoScrollFinished()
+        }
+    }
+
+    private func nsFont(for fontStyle: NotesFontStyle, size: Double) -> NSFont {
+        let baseFont = NSFont.systemFont(ofSize: size, weight: .regular)
+
+        switch fontStyle {
+        case .monospaced:
+            return NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        case .rounded:
+            return font(withDesign: .rounded, basedOn: baseFont) ?? baseFont
+        case .serif:
+            return font(withDesign: .serif, basedOn: baseFont)
+                ?? NSFont(name: "Times New Roman", size: size)
+                ?? baseFont
+        }
+    }
+
+    private func font(withDesign design: NSFontDescriptor.SystemDesign, basedOn font: NSFont) -> NSFont? {
+        guard let descriptor = font.fontDescriptor.withDesign(design) else {
+            return nil
+        }
+
+        return NSFont(descriptor: descriptor, size: font.pointSize)
     }
 }
 

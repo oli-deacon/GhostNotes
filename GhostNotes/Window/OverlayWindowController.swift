@@ -11,6 +11,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
 
         let settings = settingsStore.load()
         self.viewModel = NotesViewModel(settings: settings, settingsStore: settingsStore)
+        let launchOpacity = OverlaySettings.launchOpacity
         let initialFrame = Self.resolvedFrame(for: settings.windowFrame)
 
         let notesView = NotesView(viewModel: viewModel)
@@ -30,7 +31,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         window.isOpaque = false
         window.hasShadow = true
         window.backgroundColor = .clear
-        window.alphaValue = settings.windowOpacity
+        window.alphaValue = launchOpacity
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .none
@@ -51,6 +52,8 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         viewModel.onClickThroughChanged = { [weak self] isEnabled in
             self?.applyClickThrough(isEnabled)
         }
+        viewModel.windowOpacity = launchOpacity
+        applyOpacity(launchOpacity)
         applyClickThrough(settings.isClickThroughEnabled)
     }
 
@@ -95,6 +98,10 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
 
     func decreaseOpacity() {
         viewModel.decreaseOpacity()
+    }
+
+    func toggleAutoScroll() {
+        viewModel.toggleAutoScroll()
     }
 
     func applyOpacity(_ opacity: Double) {

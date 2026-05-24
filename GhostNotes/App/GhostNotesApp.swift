@@ -50,6 +50,13 @@ struct GhostNotesCommands: Commands {
                 AppDelegate.performFromMenu(.decreaseOpacity)
             }
             .keyboardShortcut(for: .decreaseOpacity)
+
+            Divider()
+
+            Button("Pause or Resume Scroll") {
+                AppDelegate.performFromMenu(.toggleAutoScroll)
+            }
+            .keyboardShortcut(for: .toggleAutoScroll)
         }
     }
 }
@@ -110,6 +117,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.increaseOpacity()
         case .decreaseOpacity:
             controller.decreaseOpacity()
+        case .toggleAutoScroll:
+            controller.toggleAutoScroll()
         }
     }
 }
