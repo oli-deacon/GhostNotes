@@ -292,6 +292,13 @@ struct NotesView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
 
+            focusBandOverlay
+                .padding(.horizontal, 18)
+                .padding(.vertical, 18)
+                .opacity(viewModel.isAutoScrollEnabled ? 1 : 0)
+                .animation(.easeInOut(duration: 0.22), value: viewModel.isAutoScrollEnabled)
+                .allowsHitTesting(false)
+
             if viewModel.notesText.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Settle your notes here before you go on stage.")
@@ -309,6 +316,24 @@ struct NotesView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var focusBandOverlay: some View {
+        VStack {
+            Spacer(minLength: 0)
+
+            SoftStudioFocusBand()
+                .frame(height: focusBandHeight)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: SoftStudioTheme.cornerEditor - 8, style: .continuous))
+    }
+
+    private var focusBandHeight: CGFloat {
+        let baseHeight = CGFloat(viewModel.fontSize * 2.35)
+        return min(max(baseHeight, 52), 86)
     }
 
     private var clickThroughHelpText: String {
@@ -865,6 +890,33 @@ private enum SoftStudioTheme {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    static let focusBandFill = LinearGradient(
+        colors: [
+            accent.opacity(0.03),
+            accent.opacity(0.11),
+            Color.white.opacity(0.18),
+            accent.opacity(0.11),
+            accent.opacity(0.03)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let focusBandFeather = LinearGradient(
+        stops: [
+            .init(color: .clear, location: 0),
+            .init(color: accent.opacity(0.10), location: 0.24),
+            .init(color: accent.opacity(0.18), location: 0.5),
+            .init(color: accent.opacity(0.10), location: 0.76),
+            .init(color: .clear, location: 1)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    static let focusBandStroke = accent.opacity(0.18)
+    static let focusBandGlow = accent.opacity(0.10)
 }
 
 private enum SoftStudioThemeNS {
@@ -936,6 +988,24 @@ private struct SoftStudioChip<Content: View>: View {
                         lineWidth: 1
                     )
             )
+    }
+}
+
+private struct SoftStudioFocusBand: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(SoftStudioTheme.focusBandFill)
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(SoftStudioTheme.focusBandFeather)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(SoftStudioTheme.focusBandStroke, lineWidth: 1)
+            }
+            .shadow(color: SoftStudioTheme.focusBandGlow, radius: 14, x: 0, y: 0)
+            .blendMode(.plusLighter)
+            .accessibilityHidden(true)
     }
 }
 
