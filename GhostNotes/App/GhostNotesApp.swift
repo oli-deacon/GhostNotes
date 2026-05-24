@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct OverlayNotesApp: App {
+struct GhostNotesApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
@@ -9,14 +9,14 @@ struct OverlayNotesApp: App {
             EmptyView()
         }
         .commands {
-            OverlayCommands()
+            GhostNotesCommands()
         }
     }
 }
 
-struct OverlayCommands: Commands {
+struct GhostNotesCommands: Commands {
     var body: some Commands {
-        CommandMenu("Overlay") {
+        CommandMenu("GhostNotes") {
             Button("Show or Hide Notes") {
                 AppDelegate.performFromMenu(.toggleVisibility)
             }

@@ -1,4 +1,4 @@
-# Mac Overlay Notes App Spec
+# Mac Ghost Notes App Spec
 
 ## Overview
 
@@ -354,8 +354,8 @@ Record results as:
 Once the Xcode project exists, a simple structure like this is enough:
 
 ```text
-OverlayNotes/
-  OverlayNotesApp.swift
+GhostNotes/
+  GhostNotesApp.swift
   App/
   Window/
   Features/Notes/
