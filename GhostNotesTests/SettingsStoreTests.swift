@@ -34,6 +34,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(settings.notesFontStyle, .monospaced)
         XCTAssertEqual(settings.windowFrame, OverlaySettings.defaultWindowFrame)
         XCTAssertFalse(settings.isClickThroughEnabled)
+        XCTAssertTrue(settings.isScreenShareExclusionEnabled)
     }
 
     func testLoadReturnsPreviouslySavedValues() {
@@ -46,6 +47,7 @@ final class SettingsStoreTests: XCTestCase {
         settingsStore.saveNotesFontStyle(.serif)
         settingsStore.saveWindowFrame(expectedFrame)
         settingsStore.saveClickThroughEnabled(true)
+        settingsStore.saveScreenShareExclusionEnabled(false)
 
         let settings = settingsStore.load()
 
@@ -56,6 +58,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(settings.notesFontStyle, .serif)
         XCTAssertEqual(settings.windowFrame, expectedFrame)
         XCTAssertTrue(settings.isClickThroughEnabled)
+        XCTAssertFalse(settings.isScreenShareExclusionEnabled)
     }
 
     func testSaveOpacityClampsToSupportedRange() {
@@ -88,5 +91,24 @@ final class SettingsStoreTests: XCTestCase {
         let settings = settingsStore.load()
 
         XCTAssertEqual(settings.windowFrame, OverlaySettings.defaultWindowFrame)
+    }
+
+    @MainActor
+    func testToggleScreenShareExclusionPersistsAndInvokesCallback() {
+        let viewModel = NotesViewModel(settings: settingsStore.load(), settingsStore: settingsStore)
+        var callbackValues: [Bool] = []
+        viewModel.onScreenShareExclusionChanged = { callbackValues.append($0) }
+
+        viewModel.toggleScreenShareExclusion()
+
+        XCTAssertFalse(viewModel.isScreenShareExclusionEnabled)
+        XCTAssertFalse(settingsStore.load().isScreenShareExclusionEnabled)
+        XCTAssertEqual(callbackValues, [false])
+
+        viewModel.toggleScreenShareExclusion()
+
+        XCTAssertTrue(viewModel.isScreenShareExclusionEnabled)
+        XCTAssertTrue(settingsStore.load().isScreenShareExclusionEnabled)
+        XCTAssertEqual(callbackValues, [false, true])
     }
 }

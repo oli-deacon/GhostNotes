@@ -22,6 +22,10 @@ struct GhostNotesCommands: Commands {
             }
             .keyboardShortcut(for: .toggleVisibility)
 
+            Button("Hide from Screen Sharing") {
+                AppDelegate.toggleScreenShareExclusionFromMenu()
+            }
+
             Button("Toggle Pass-Through") {
                 AppDelegate.performFromMenu(.toggleClickThrough)
             }
@@ -105,6 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static func performFromMenu(_ action: HotkeyManager.Action) {
         Task { @MainActor in
             shared?.perform(action)
+        }
+    }
+
+    static func toggleScreenShareExclusionFromMenu() {
+        Task { @MainActor in
+            shared?.overlayWindowController?.toggleScreenShareExclusion()
         }
     }
 

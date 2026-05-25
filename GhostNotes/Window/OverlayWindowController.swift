@@ -40,9 +40,10 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .none
         window.toolbarStyle = .unifiedCompact
-        window.isMovableByWindowBackground = true
+        window.isMovableByWindowBackground = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.minSize = NSSize(width: 420, height: 220)
+        window.sharingType = settings.isScreenShareExclusionEnabled ? .none : .readOnly
         window.setFrame(initialFrame, display: true)
         window.contentView = hostingView
 
@@ -56,9 +57,13 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         viewModel.onClickThroughChanged = { [weak self] isEnabled in
             self?.applyClickThrough(isEnabled)
         }
+        viewModel.onScreenShareExclusionChanged = { [weak self] isEnabled in
+            self?.applyScreenShareExclusion(isEnabled)
+        }
         viewModel.windowOpacity = launchOpacity
         applyOpacity(launchOpacity)
         applyClickThrough(settings.isClickThroughEnabled)
+        applyScreenShareExclusion(settings.isScreenShareExclusionEnabled)
     }
 
     @available(*, unavailable)
@@ -132,16 +137,29 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         window?.ignoresMouseEvents = isEnabled
     }
 
+    func toggleScreenShareExclusion() {
+        viewModel.toggleScreenShareExclusion()
+    }
+
+    func applyScreenShareExclusion(_ isEnabled: Bool) {
+        window?.sharingType = isEnabled ? .none : .readOnly
+    }
+
     func windowDidMove(_ notification: Notification) {
         persistWindowFrame()
     }
 
     func windowDidEndLiveResize(_ notification: Notification) {
+        viewModel.setLiveResizing(false)
         persistWindowFrame()
     }
 
     func windowDidResize(_ notification: Notification) {
         persistWindowFrame()
+    }
+
+    func windowWillStartLiveResize(_ notification: Notification) {
+        viewModel.setLiveResizing(true)
     }
 
     func windowWillClose(_ notification: Notification) {

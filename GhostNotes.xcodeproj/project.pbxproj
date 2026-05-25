@@ -18,6 +18,11 @@
 		A00000000000000000000019 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003 /* SettingsStore.swift */; };
 		A0000000000000000000001A /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* HotkeyManager.swift */; };
 		A0000000000000000000001B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* Assets.xcassets */; };
+		A0000000000000000000001C /* NotesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000004 /* NotesViewModel.swift */; };
+		A0000000000000000000001D /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000005 /* NotesView.swift */; };
+		A0000000000000000000001E /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000006 /* OverlayWindowController.swift */; };
+		A0000000000000000000001F /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* HotkeyManager.swift */; };
+		A0000000000000000000002A /* OverlayWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* OverlayWindowControllerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,6 +48,7 @@
 		A0000000000000000000000A /* GhostNotesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GhostNotesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0000000000000000000000B /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		A0000000000000000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A00000000000000000000029 /* OverlayWindowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowControllerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +153,7 @@
 		A00000000000000000000038 /* GhostNotesTests */ = {
 			isa = PBXGroup;
 			children = (
+				A00000000000000000000029 /* OverlayWindowControllerTests.swift */,
 				A00000000000000000000009 /* SettingsStoreTests.swift */,
 			);
 			path = GhostNotesTests;
@@ -283,6 +290,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0000000000000000000002A /* OverlayWindowControllerTests.swift in Sources */,
+				A0000000000000000000001F /* HotkeyManager.swift in Sources */,
+				A0000000000000000000001E /* OverlayWindowController.swift in Sources */,
+				A0000000000000000000001D /* NotesView.swift in Sources */,
+				A0000000000000000000001C /* NotesViewModel.swift in Sources */,
 				A00000000000000000000018 /* OverlaySettings.swift in Sources */,
 				A00000000000000000000019 /* SettingsStore.swift in Sources */,
 				A00000000000000000000017 /* SettingsStoreTests.swift in Sources */,

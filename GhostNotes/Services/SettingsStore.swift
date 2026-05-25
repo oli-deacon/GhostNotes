@@ -10,6 +10,7 @@ final class SettingsStore {
         static let notesFontStyle = "notesFontStyle"
         static let windowFrame = "windowFrame"
         static let isClickThroughEnabled = "isClickThroughEnabled"
+        static let isScreenShareExclusionEnabled = "isScreenShareExclusionEnabled"
     }
 
     private let userDefaults: UserDefaults
@@ -26,7 +27,8 @@ final class SettingsStore {
             autoScrollSpeed: loadAutoScrollSpeed(),
             notesFontStyle: loadNotesFontStyle(),
             windowFrame: loadWindowFrame(),
-            isClickThroughEnabled: userDefaults.bool(forKey: Keys.isClickThroughEnabled)
+            isClickThroughEnabled: userDefaults.bool(forKey: Keys.isClickThroughEnabled),
+            isScreenShareExclusionEnabled: loadScreenShareExclusionEnabled()
         )
     }
 
@@ -56,6 +58,10 @@ final class SettingsStore {
 
     func saveClickThroughEnabled(_ isEnabled: Bool) {
         userDefaults.set(isEnabled, forKey: Keys.isClickThroughEnabled)
+    }
+
+    func saveScreenShareExclusionEnabled(_ isEnabled: Bool) {
+        userDefaults.set(isEnabled, forKey: Keys.isScreenShareExclusionEnabled)
     }
 
     private func loadOpacity() -> Double {
@@ -89,6 +95,14 @@ final class SettingsStore {
         }
 
         return fontStyle
+    }
+
+    private func loadScreenShareExclusionEnabled() -> Bool {
+        guard userDefaults.object(forKey: Keys.isScreenShareExclusionEnabled) != nil else {
+            return OverlaySettings.defaultScreenShareExclusionEnabled
+        }
+
+        return userDefaults.bool(forKey: Keys.isScreenShareExclusionEnabled)
     }
 
     private func clamp(_ value: Double, min minimum: Double, max maximum: Double) -> Double {

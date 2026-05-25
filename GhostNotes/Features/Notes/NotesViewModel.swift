@@ -28,14 +28,14 @@ final class NotesViewModel: ObservableObject {
 
     @Published var windowOpacity: Double {
         didSet {
-            settingsStore.saveOpacity(windowOpacity)
             onOpacityChanged?(windowOpacity)
+            scheduleOpacitySave()
         }
     }
 
     @Published var fontSize: Double {
         didSet {
-            settingsStore.saveFontSize(fontSize)
+            scheduleFontSizeSave()
         }
     }
 
@@ -52,13 +52,14 @@ final class NotesViewModel: ObservableObject {
 
     @Published var notesFontStyle: NotesFontStyle {
         didSet {
-            settingsStore.saveNotesFontStyle(notesFontStyle)
+            scheduleFontStyleSave()
         }
     }
 
     @Published private(set) var isAutoScrollEnabled = false
     @Published private(set) var scrollResetToken = 0
     @Published private(set) var scrollStatus: ScrollStatus = .ready
+    @Published private(set) var isLiveResizing = false
 
     @Published var isClickThroughEnabled: Bool {
         didSet {
@@ -67,10 +68,21 @@ final class NotesViewModel: ObservableObject {
         }
     }
 
+    @Published var isScreenShareExclusionEnabled: Bool {
+        didSet {
+            settingsStore.saveScreenShareExclusionEnabled(isScreenShareExclusionEnabled)
+            onScreenShareExclusionChanged?(isScreenShareExclusionEnabled)
+        }
+    }
+
     var onOpacityChanged: ((Double) -> Void)?
     var onClickThroughChanged: ((Bool) -> Void)?
+    var onScreenShareExclusionChanged: ((Bool) -> Void)?
 
     private let settingsStore: SettingsStore
+    private var pendingOpacitySave: DispatchWorkItem?
+    private var pendingFontSizeSave: DispatchWorkItem?
+    private var pendingFontStyleSave: DispatchWorkItem?
 
     init(settings: OverlaySettings, settingsStore: SettingsStore) {
         self.notesText = settings.notesText
@@ -79,6 +91,7 @@ final class NotesViewModel: ObservableObject {
         self.autoScrollSpeed = settings.autoScrollSpeed
         self.notesFontStyle = settings.notesFontStyle
         self.isClickThroughEnabled = settings.isClickThroughEnabled
+        self.isScreenShareExclusionEnabled = settings.isScreenShareExclusionEnabled
         self.settingsStore = settingsStore
     }
 
@@ -106,6 +119,10 @@ final class NotesViewModel: ObservableObject {
         isClickThroughEnabled.toggle()
     }
 
+    func toggleScreenShareExclusion() {
+        isScreenShareExclusionEnabled.toggle()
+    }
+
     func increaseAutoScrollSpeed() {
         autoScrollSpeed = min(autoScrollSpeed + Bounds.autoScrollSpeedStep, Bounds.maximumAutoScrollSpeed)
     }
@@ -128,6 +145,46 @@ final class NotesViewModel: ObservableObject {
         isAutoScrollEnabled = false
         scrollResetToken += 1
         scrollStatus = .ready
+    }
+
+    func setLiveResizing(_ isLiveResizing: Bool) {
+        self.isLiveResizing = isLiveResizing
+    }
+
+    private func scheduleOpacitySave() {
+        pendingOpacitySave?.cancel()
+
+        let opacity = windowOpacity
+        let workItem = DispatchWorkItem { [settingsStore] in
+            settingsStore.saveOpacity(opacity)
+        }
+
+        pendingOpacitySave = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+    }
+
+    private func scheduleFontSizeSave() {
+        pendingFontSizeSave?.cancel()
+
+        let fontSize = fontSize
+        let workItem = DispatchWorkItem { [settingsStore] in
+            settingsStore.saveFontSize(fontSize)
+        }
+
+        pendingFontSizeSave = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+    }
+
+    private func scheduleFontStyleSave() {
+        pendingFontStyleSave?.cancel()
+
+        let fontStyle = notesFontStyle
+        let workItem = DispatchWorkItem { [settingsStore] in
+            settingsStore.saveNotesFontStyle(fontStyle)
+        }
+
+        pendingFontStyleSave = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
     }
 
     private static func clamp(_ value: Double, min minimum: Double, max maximum: Double) -> Double {

@@ -2,6 +2,16 @@
 
 GhostNotes is a lightweight floating presenter notes app for macOS.
 
+## Screen Sharing Behavior
+
+GhostNotes includes a `Hide on Share` setting that asks macOS to exclude the notes window from screen sharing and recording by setting `NSWindow.sharingType = .none`.
+
+This is a best-effort privacy feature, not a guarantee.
+
+- Behavior can vary by macOS version.
+- Behavior can vary by capture tool, including Zoom, Microsoft Teams, and built-in macOS recording.
+- Test your own presentation setup before relying on it live.
+
 ## Get the Latest Build
 
 Download the latest release here:

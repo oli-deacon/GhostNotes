@@ -3,7 +3,6 @@ import SwiftUI
 
 struct NotesView: View {
     @ObservedObject var viewModel: NotesViewModel
-    @State private var ambientPulseExpanded = false
 
     var body: some View {
         ZStack {
@@ -17,6 +16,11 @@ struct NotesView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
+                if viewModel.isScreenShareExclusionEnabled {
+                    screenShareExclusionBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 editorCard
             }
             .padding(.horizontal, SoftStudioTheme.spacingMedium)
@@ -26,25 +30,29 @@ struct NotesView: View {
         .frame(minWidth: 420, minHeight: 220)
         .padding(10)
         .background(Color.clear)
-        .onAppear {
-            ambientPulseExpanded = true
-        }
-        .animation(.spring(response: 0.32, dampingFraction: 0.84), value: viewModel.isClickThroughEnabled)
-        .animation(.spring(response: 0.26, dampingFraction: 0.84), value: viewModel.isAutoScrollEnabled)
     }
 
     private var shellBackground: some View {
         let shape = RoundedRectangle(cornerRadius: SoftStudioTheme.cornerShell, style: .continuous)
+        let isLiveResizing = viewModel.isLiveResizing
 
         return shape
             .fill(SoftStudioTheme.shellWash)
-            .background(shape.fill(.ultraThinMaterial))
+            .background {
+                if isLiveResizing {
+                    shape.fill(SoftStudioTheme.backgroundWash.opacity(0.18))
+                } else {
+                    shape.fill(.ultraThinMaterial)
+                }
+            }
             .overlay {
-                shape
-                    .fill(SoftStudioTheme.shellInnerGlow)
-                    .blur(radius: 0.6)
-                    .padding(1)
-                    .mask(shape)
+                if !isLiveResizing {
+                    shape
+                        .fill(SoftStudioTheme.shellInnerGlow)
+                        .blur(radius: 0.6)
+                        .padding(1)
+                        .mask(shape)
+                }
             }
             .overlay(alignment: .top) {
                 shape
@@ -57,20 +65,14 @@ struct NotesView: View {
                     .strokeBorder(SoftStudioTheme.shellStroke, lineWidth: 1)
             }
             .overlay {
-                if viewModel.isAutoScrollEnabled {
+                if viewModel.isAutoScrollEnabled && !isLiveResizing {
                     shape
                         .strokeBorder(SoftStudioTheme.autoScrollGlow, lineWidth: 1.2)
-                        .blur(radius: ambientPulseExpanded ? 12 : 6)
-                        .scaleEffect(ambientPulseExpanded ? 1.01 : 0.995)
-                        .opacity(ambientPulseExpanded ? 0.34 : 0.16)
-                        .animation(
-                            .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
-                            value: ambientPulseExpanded
-                        )
+                        .opacity(0.22)
                 }
             }
-            .shadow(color: SoftStudioTheme.shadowStrong, radius: 28, x: 0, y: 20)
-            .shadow(color: SoftStudioTheme.shadowSoft, radius: 12, x: 0, y: 2)
+            .shadow(color: SoftStudioTheme.shadowStrong, radius: isLiveResizing ? 12 : 28, x: 0, y: isLiveResizing ? 8 : 20)
+            .shadow(color: SoftStudioTheme.shadowSoft, radius: isLiveResizing ? 4 : 12, x: 0, y: 2)
     }
 
     private var header: some View {
@@ -100,6 +102,7 @@ struct NotesView: View {
                 fontStyleControl
                 fontSizeControl
                 opacityControl
+                screenShareExclusionControl
                 clickThroughControl
             }
         }
@@ -122,6 +125,7 @@ struct NotesView: View {
 
             HStack(alignment: .center, spacing: 8) {
                 opacityControl
+                screenShareExclusionControl
                 Spacer(minLength: 0)
             }
         }
@@ -129,20 +133,24 @@ struct NotesView: View {
 
     private var headerTitle: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent : SoftStudioTheme.accentMuted)
-                    .frame(width: 8, height: 8)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
-                    )
-                    .shadow(color: viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent.opacity(0.30) : .clear, radius: 6)
+            HStack(spacing: 10) {
+                WindowDragHandle()
 
-                Text("Ghost Notes")
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(SoftStudioTheme.textPrimary)
-                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent : SoftStudioTheme.accentMuted)
+                        .frame(width: 8, height: 8)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                        )
+                        .shadow(color: viewModel.isAutoScrollEnabled ? SoftStudioTheme.accent.opacity(0.30) : .clear, radius: 6)
+
+                    Text("Ghost Notes")
+                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                        .foregroundStyle(SoftStudioTheme.textPrimary)
+                        .lineLimit(1)
+                }
             }
 
             Text(statusSubtitle)
@@ -215,6 +223,30 @@ struct NotesView: View {
         .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.isClickThroughEnabled))
     }
 
+    private var screenShareExclusionControl: some View {
+        Button {
+            viewModel.toggleScreenShareExclusion()
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: viewModel.isScreenShareExclusionEnabled ? "rectangle.slash.fill" : "rectangle.on.rectangle")
+                    .imageScale(.small)
+
+                ViewThatFits(in: .horizontal) {
+                    Text("Hide on Share")
+                    Text("Hide Share")
+                    Text("Hide")
+                }
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .help(screenShareExclusionHelpText)
+        .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.isScreenShareExclusionEnabled))
+    }
+
     private var compactClickThroughControl: some View {
         Button {
             viewModel.toggleClickThrough()
@@ -271,6 +303,38 @@ struct NotesView: View {
         )
     }
 
+    private var screenShareExclusionBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "rectangle.slash.fill")
+                .foregroundStyle(SoftStudioTheme.accent)
+                .imageScale(.medium)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Hide on Share is on")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textPrimary)
+
+                Text("Ghost Notes asks macOS to hide this window during screen sharing and recording, but some apps may still capture it.")
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            SoftStudioCardBackground(
+                cornerRadius: SoftStudioTheme.cornerChip,
+                fill: SoftStudioTheme.bannerFill,
+                highlight: SoftStudioTheme.bannerHighlight,
+                stroke: SoftStudioTheme.bannerStroke
+            )
+        )
+    }
+
     private var editorCard: some View {
         ZStack(alignment: .topLeading) {
             SoftStudioCardBackground(
@@ -296,7 +360,6 @@ struct NotesView: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 18)
                 .opacity(viewModel.isAutoScrollEnabled ? 1 : 0)
-                .animation(.easeInOut(duration: 0.22), value: viewModel.isAutoScrollEnabled)
                 .allowsHitTesting(false)
 
             if viewModel.notesText.isEmpty {
@@ -341,6 +404,12 @@ struct NotesView: View {
         return viewModel.isClickThroughEnabled
             ? "Disable click-through (\(shortcut))"
             : "Enable click-through (\(shortcut))"
+    }
+
+    private var screenShareExclusionHelpText: String {
+        viewModel.isScreenShareExclusionEnabled
+            ? "Best-effort hiding from screen sharing and recording is enabled"
+            : "Enable best-effort hiding from screen sharing and recording"
     }
 
     private var autoScrollHelpText: String {
@@ -532,6 +601,9 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
         textView.backgroundColor = .clear
         textView.textColor = SoftStudioThemeNS.textPrimary
         textView.insertionPointColor = SoftStudioThemeNS.textPrimary
+        textView.usesFontPanel = false
+        textView.layoutManager?.allowsNonContiguousLayout = true
+        textView.layoutManager?.usesFontLeading = false
         textView.string = text
         textView.textContainerInset = NSSize(width: 14, height: 16)
         textView.isHorizontallyResizable = false
@@ -665,9 +737,16 @@ private struct AutoScrollingTextEditor: NSViewRepresentable {
             if didTypographyChange || forceTextStorageStyling {
                 if let textStorage = textView.textStorage {
                     let selectedRange = textView.selectedRange()
+                    let fullRange = NSRange(location: 0, length: textStorage.length)
+                    let undoManager = textView.undoManager
+
+                    undoManager?.disableUndoRegistration()
                     textStorage.beginEditing()
-                    textStorage.setAttributes(attributes, range: NSRange(location: 0, length: textStorage.length))
+                    if fullRange.length > 0 {
+                        textStorage.setAttributes(attributes, range: fullRange)
+                    }
                     textStorage.endEditing()
+                    undoManager?.enableUndoRegistration()
                     textView.setSelectedRange(selectedRange)
                 }
             }
@@ -947,12 +1026,61 @@ private struct SoftStudioCardBackground: View {
     }
 }
 
+private struct WindowDragHandle: View {
+    var body: some View {
+        ZStack {
+            WindowDragHandleRepresentable()
+
+            Image(systemName: "circle.grid.2x2.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(SoftStudioTheme.textSecondary.opacity(0.9))
+        }
+        .frame(width: 34, height: 26)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(SoftStudioTheme.cardFill.opacity(0.72))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(SoftStudioTheme.headerStroke.opacity(0.8), lineWidth: 1)
+        )
+        .help("Drag to move window")
+    }
+}
+
+private struct WindowDragHandleRepresentable: NSViewRepresentable {
+    func makeNSView(context: Context) -> DragHandleNSView {
+        DragHandleNSView()
+    }
+
+    func updateNSView(_ nsView: DragHandleNSView, context: Context) {}
+}
+
+private final class DragHandleNSView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        translatesAutoresizingMaskIntoConstraints = false
+        toolTip = "Drag to move window"
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: 34, height: 26)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+}
+
 private struct SoftStudioChip<Content: View>: View {
     let isActive: Bool
     let minHeight: CGFloat
     @ViewBuilder let content: Content
-
-    @State private var isHovered = false
 
     init(
         isActive: Bool = false,
@@ -970,12 +1098,7 @@ private struct SoftStudioChip<Content: View>: View {
             .padding(.vertical, 8)
             .frame(minHeight: minHeight)
             .background(background)
-            .scaleEffect(isHovered ? 1.01 : 1.0)
             .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.10) : .clear, radius: 8, y: 2)
-            .onHover { hovering in
-                isHovered = hovering
-            }
-            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
     }
 
     private var background: some View {
@@ -1021,8 +1144,6 @@ private struct SoftStudioIconButtonBody: View {
     let configuration: ButtonStyleConfiguration
     let isActive: Bool
 
-    @State private var isHovered = false
-
     var body: some View {
         configuration.label
             .font(.system(.caption, design: .rounded, weight: .semibold))
@@ -1033,7 +1154,7 @@ private struct SoftStudioIconButtonBody: View {
                     .fill(
                         isActive
                             ? SoftStudioTheme.accent.opacity(configuration.isPressed ? 0.26 : 0.18)
-                            : Color.white.opacity(configuration.isPressed ? 0.24 : (isHovered ? 0.19 : 0.12))
+                            : Color.white.opacity(configuration.isPressed ? 0.24 : 0.12)
                     )
             )
             .overlay(
@@ -1043,13 +1164,8 @@ private struct SoftStudioIconButtonBody: View {
                         lineWidth: 1
                     )
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.04 : 1.0))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.16) : .clear, radius: 6, y: 1)
-            .onHover { hovering in
-                isHovered = hovering
-            }
-            .animation(.spring(response: 0.22, dampingFraction: 0.80), value: configuration.isPressed)
-            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
     }
 }
 
@@ -1065,8 +1181,6 @@ private struct SoftStudioToggleButtonBody: View {
     let configuration: ButtonStyleConfiguration
     let isActive: Bool
 
-    @State private var isHovered = false
-
     var body: some View {
         configuration.label
             .foregroundStyle(isActive ? SoftStudioTheme.accent : SoftStudioTheme.textPrimary)
@@ -1081,12 +1195,7 @@ private struct SoftStudioToggleButtonBody: View {
                         lineWidth: 1
                     )
             )
-            .scaleEffect(configuration.isPressed ? 0.97 : (isHovered ? 1.01 : 1.0))
+            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
             .shadow(color: isActive ? SoftStudioTheme.accent.opacity(0.12) : .clear, radius: 8, y: 2)
-            .onHover { hovering in
-                isHovered = hovering
-            }
-            .animation(.spring(response: 0.22, dampingFraction: 0.80), value: configuration.isPressed)
-            .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isHovered)
     }
 }
