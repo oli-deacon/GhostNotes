@@ -35,6 +35,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(settings.windowFrame, OverlaySettings.defaultWindowFrame)
         XCTAssertFalse(settings.isClickThroughEnabled)
         XCTAssertTrue(settings.isScreenShareExclusionEnabled)
+        XCTAssertTrue(settings.showsOnAllSpaces)
     }
 
     func testLoadReturnsPreviouslySavedValues() {
@@ -48,6 +49,7 @@ final class SettingsStoreTests: XCTestCase {
         settingsStore.saveWindowFrame(expectedFrame)
         settingsStore.saveClickThroughEnabled(true)
         settingsStore.saveScreenShareExclusionEnabled(false)
+        settingsStore.saveShowsOnAllSpaces(false)
 
         let settings = settingsStore.load()
 
@@ -59,6 +61,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(settings.windowFrame, expectedFrame)
         XCTAssertTrue(settings.isClickThroughEnabled)
         XCTAssertFalse(settings.isScreenShareExclusionEnabled)
+        XCTAssertFalse(settings.showsOnAllSpaces)
     }
 
     func testSaveOpacityClampsToSupportedRange() {
@@ -91,6 +94,25 @@ final class SettingsStoreTests: XCTestCase {
         let settings = settingsStore.load()
 
         XCTAssertEqual(settings.windowFrame, OverlaySettings.defaultWindowFrame)
+    }
+
+    @MainActor
+    func testToggleShowsOnAllSpacesPersistsAndInvokesCallback() {
+        let viewModel = NotesViewModel(settings: settingsStore.load(), settingsStore: settingsStore)
+        var callbackValues: [Bool] = []
+        viewModel.onShowsOnAllSpacesChanged = { callbackValues.append($0) }
+
+        viewModel.toggleShowsOnAllSpaces()
+
+        XCTAssertFalse(viewModel.showsOnAllSpaces)
+        XCTAssertFalse(settingsStore.load().showsOnAllSpaces)
+        XCTAssertEqual(callbackValues, [false])
+
+        viewModel.toggleShowsOnAllSpaces()
+
+        XCTAssertTrue(viewModel.showsOnAllSpaces)
+        XCTAssertTrue(settingsStore.load().showsOnAllSpaces)
+        XCTAssertEqual(callbackValues, [false, true])
     }
 
     @MainActor

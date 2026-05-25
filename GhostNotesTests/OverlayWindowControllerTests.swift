@@ -41,6 +41,14 @@ final class OverlayWindowControllerTests: XCTestCase {
         )
     }
 
+    func testInitialWindowShowsOnAllSpacesByDefault() throws {
+        controller = OverlayWindowController(settingsStore: settingsStore)
+        let window = try XCTUnwrap(controller?.window)
+
+        XCTAssertTrue(window.collectionBehavior.contains(.canJoinAllSpaces))
+        XCTAssertTrue(window.collectionBehavior.contains(.fullScreenAuxiliary))
+    }
+
     func testInitialWindowSharingTypeCanLoadAsReadOnly() throws {
         settingsStore.saveScreenShareExclusionEnabled(false)
 
@@ -78,5 +86,25 @@ final class OverlayWindowControllerTests: XCTestCase {
             NSWindow.SharingType.none.rawValue,
             "Expected toggled-on sharingType .none, got rawValue \(window.sharingType.rawValue)"
         )
+    }
+
+    func testSingleDisplayModePersistsAndUpdatesCollectionBehavior() throws {
+        controller = OverlayWindowController(settingsStore: settingsStore)
+        let initialWindow = try XCTUnwrap(controller?.window)
+
+        XCTAssertTrue(initialWindow.collectionBehavior.contains(.canJoinAllSpaces))
+
+        controller?.toggleShowsOnAllSpaces()
+        XCTAssertFalse(settingsStore.load().showsOnAllSpaces)
+        XCTAssertFalse(initialWindow.collectionBehavior.contains(.canJoinAllSpaces))
+        XCTAssertTrue(initialWindow.collectionBehavior.contains(.fullScreenAuxiliary))
+
+        controller?.window?.delegate = nil
+        controller?.close()
+        controller = OverlayWindowController(settingsStore: settingsStore)
+        let recreatedWindow = try XCTUnwrap(controller?.window)
+
+        XCTAssertFalse(recreatedWindow.collectionBehavior.contains(.canJoinAllSpaces))
+        XCTAssertTrue(recreatedWindow.collectionBehavior.contains(.fullScreenAuxiliary))
     }
 }

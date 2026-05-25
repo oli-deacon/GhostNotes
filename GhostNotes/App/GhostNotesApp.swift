@@ -26,6 +26,10 @@ struct GhostNotesCommands: Commands {
                 AppDelegate.toggleScreenShareExclusionFromMenu()
             }
 
+            Button("Show on All Spaces") {
+                AppDelegate.toggleShowsOnAllSpacesFromMenu()
+            }
+
             Button("Toggle Pass-Through") {
                 AppDelegate.performFromMenu(.toggleClickThrough)
             }
@@ -115,6 +119,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static func toggleScreenShareExclusionFromMenu() {
         Task { @MainActor in
             shared?.overlayWindowController?.toggleScreenShareExclusion()
+        }
+    }
+
+    static func toggleShowsOnAllSpacesFromMenu() {
+        Task { @MainActor in
+            shared?.overlayWindowController?.toggleShowsOnAllSpaces()
         }
     }
 

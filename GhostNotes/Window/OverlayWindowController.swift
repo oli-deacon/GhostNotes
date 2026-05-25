@@ -41,7 +41,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         window.titlebarSeparatorStyle = .none
         window.toolbarStyle = .unifiedCompact
         window.isMovableByWindowBackground = false
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.collectionBehavior = Self.collectionBehavior(showsOnAllSpaces: settings.showsOnAllSpaces)
         window.minSize = NSSize(width: 420, height: 220)
         window.sharingType = settings.isScreenShareExclusionEnabled ? .none : .readOnly
         window.setFrame(initialFrame, display: true)
@@ -60,10 +60,14 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         viewModel.onScreenShareExclusionChanged = { [weak self] isEnabled in
             self?.applyScreenShareExclusion(isEnabled)
         }
+        viewModel.onShowsOnAllSpacesChanged = { [weak self] showsOnAllSpaces in
+            self?.applyShowsOnAllSpaces(showsOnAllSpaces)
+        }
         viewModel.windowOpacity = launchOpacity
         applyOpacity(launchOpacity)
         applyClickThrough(settings.isClickThroughEnabled)
         applyScreenShareExclusion(settings.isScreenShareExclusionEnabled)
+        applyShowsOnAllSpaces(settings.showsOnAllSpaces)
     }
 
     @available(*, unavailable)
@@ -141,8 +145,16 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         viewModel.toggleScreenShareExclusion()
     }
 
+    func toggleShowsOnAllSpaces() {
+        viewModel.toggleShowsOnAllSpaces()
+    }
+
     func applyScreenShareExclusion(_ isEnabled: Bool) {
         window?.sharingType = isEnabled ? .none : .readOnly
+    }
+
+    func applyShowsOnAllSpaces(_ showsOnAllSpaces: Bool) {
+        window?.collectionBehavior = Self.collectionBehavior(showsOnAllSpaces: showsOnAllSpaces)
     }
 
     func windowDidMove(_ notification: Notification) {
@@ -206,5 +218,15 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         let intersection = lhs.intersection(rhs)
         guard !intersection.isNull else { return 0 }
         return intersection.width * intersection.height
+    }
+
+    private static func collectionBehavior(showsOnAllSpaces: Bool) -> NSWindow.CollectionBehavior {
+        var behavior: NSWindow.CollectionBehavior = [.fullScreenAuxiliary]
+
+        if showsOnAllSpaces {
+            behavior.insert(.canJoinAllSpaces)
+        }
+
+        return behavior
     }
 }

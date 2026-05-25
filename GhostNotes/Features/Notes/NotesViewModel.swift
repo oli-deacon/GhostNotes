@@ -75,9 +75,17 @@ final class NotesViewModel: ObservableObject {
         }
     }
 
+    @Published var showsOnAllSpaces: Bool {
+        didSet {
+            settingsStore.saveShowsOnAllSpaces(showsOnAllSpaces)
+            onShowsOnAllSpacesChanged?(showsOnAllSpaces)
+        }
+    }
+
     var onOpacityChanged: ((Double) -> Void)?
     var onClickThroughChanged: ((Bool) -> Void)?
     var onScreenShareExclusionChanged: ((Bool) -> Void)?
+    var onShowsOnAllSpacesChanged: ((Bool) -> Void)?
 
     private let settingsStore: SettingsStore
     private var pendingOpacitySave: DispatchWorkItem?
@@ -92,6 +100,7 @@ final class NotesViewModel: ObservableObject {
         self.notesFontStyle = settings.notesFontStyle
         self.isClickThroughEnabled = settings.isClickThroughEnabled
         self.isScreenShareExclusionEnabled = settings.isScreenShareExclusionEnabled
+        self.showsOnAllSpaces = settings.showsOnAllSpaces
         self.settingsStore = settingsStore
     }
 
@@ -121,6 +130,10 @@ final class NotesViewModel: ObservableObject {
 
     func toggleScreenShareExclusion() {
         isScreenShareExclusionEnabled.toggle()
+    }
+
+    func toggleShowsOnAllSpaces() {
+        showsOnAllSpaces.toggle()
     }
 
     func increaseAutoScrollSpeed() {

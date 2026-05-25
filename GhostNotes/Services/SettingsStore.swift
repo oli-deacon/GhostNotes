@@ -11,6 +11,7 @@ final class SettingsStore {
         static let windowFrame = "windowFrame"
         static let isClickThroughEnabled = "isClickThroughEnabled"
         static let isScreenShareExclusionEnabled = "isScreenShareExclusionEnabled"
+        static let showsOnAllSpaces = "showsOnAllSpaces"
     }
 
     private let userDefaults: UserDefaults
@@ -28,7 +29,8 @@ final class SettingsStore {
             notesFontStyle: loadNotesFontStyle(),
             windowFrame: loadWindowFrame(),
             isClickThroughEnabled: userDefaults.bool(forKey: Keys.isClickThroughEnabled),
-            isScreenShareExclusionEnabled: loadScreenShareExclusionEnabled()
+            isScreenShareExclusionEnabled: loadScreenShareExclusionEnabled(),
+            showsOnAllSpaces: loadShowsOnAllSpaces()
         )
     }
 
@@ -62,6 +64,10 @@ final class SettingsStore {
 
     func saveScreenShareExclusionEnabled(_ isEnabled: Bool) {
         userDefaults.set(isEnabled, forKey: Keys.isScreenShareExclusionEnabled)
+    }
+
+    func saveShowsOnAllSpaces(_ showsOnAllSpaces: Bool) {
+        userDefaults.set(showsOnAllSpaces, forKey: Keys.showsOnAllSpaces)
     }
 
     private func loadOpacity() -> Double {
@@ -103,6 +109,14 @@ final class SettingsStore {
         }
 
         return userDefaults.bool(forKey: Keys.isScreenShareExclusionEnabled)
+    }
+
+    private func loadShowsOnAllSpaces() -> Bool {
+        guard userDefaults.object(forKey: Keys.showsOnAllSpaces) != nil else {
+            return OverlaySettings.defaultShowsOnAllSpaces
+        }
+
+        return userDefaults.bool(forKey: Keys.showsOnAllSpaces)
     }
 
     private func clamp(_ value: Double, min minimum: Double, max maximum: Double) -> Double {

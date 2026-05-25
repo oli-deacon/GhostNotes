@@ -21,6 +21,11 @@ struct NotesView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
+                if !viewModel.showsOnAllSpaces {
+                    allSpacesBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 editorCard
             }
             .padding(.horizontal, SoftStudioTheme.spacingMedium)
@@ -102,6 +107,7 @@ struct NotesView: View {
                 fontStyleControl
                 fontSizeControl
                 opacityControl
+                allSpacesControl
                 screenShareExclusionControl
                 clickThroughControl
             }
@@ -125,6 +131,7 @@ struct NotesView: View {
 
             HStack(alignment: .center, spacing: 8) {
                 opacityControl
+                allSpacesControl
                 screenShareExclusionControl
                 Spacer(minLength: 0)
             }
@@ -247,6 +254,29 @@ struct NotesView: View {
         .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.isScreenShareExclusionEnabled))
     }
 
+    private var allSpacesControl: some View {
+        Button {
+            viewModel.toggleShowsOnAllSpaces()
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: viewModel.showsOnAllSpaces ? "square.3.stack.3d.top.filled" : "display")
+                    .imageScale(.small)
+
+                ViewThatFits(in: .horizontal) {
+                    Text("All Spaces")
+                    Text("All")
+                }
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .help(allSpacesHelpText)
+        .buttonStyle(SoftStudioToggleButtonStyle(isActive: viewModel.showsOnAllSpaces))
+    }
+
     private var compactClickThroughControl: some View {
         Button {
             viewModel.toggleClickThrough()
@@ -316,6 +346,38 @@ struct NotesView: View {
                     .foregroundStyle(SoftStudioTheme.textPrimary)
 
                 Text("Ghost Notes asks macOS to hide this window during screen sharing and recording, but some apps may still capture it.")
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(SoftStudioTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            SoftStudioCardBackground(
+                cornerRadius: SoftStudioTheme.cornerChip,
+                fill: SoftStudioTheme.bannerFill,
+                highlight: SoftStudioTheme.bannerHighlight,
+                stroke: SoftStudioTheme.bannerStroke
+            )
+        )
+    }
+
+    private var allSpacesBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "display")
+                .foregroundStyle(SoftStudioTheme.accent)
+                .imageScale(.medium)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Single-display mode is on")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SoftStudioTheme.textPrimary)
+
+                Text("Ghost Notes stays on its current display and space. This is the most reliable way to keep it off a shared screen in Zoom or Teams.")
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(SoftStudioTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -412,6 +474,12 @@ struct NotesView: View {
             : "Enable best-effort hiding from screen sharing and recording"
     }
 
+    private var allSpacesHelpText: String {
+        viewModel.showsOnAllSpaces
+            ? "Ghost Notes appears across spaces and full-screen apps"
+            : "Ghost Notes stays on its current display and space"
+    }
+
     private var autoScrollHelpText: String {
         let shortcut = HotkeyManager.description(for: .toggleAutoScroll)
         return viewModel.isAutoScrollEnabled
@@ -422,6 +490,10 @@ struct NotesView: View {
     private var statusSubtitle: String {
         if viewModel.isClickThroughEnabled {
             return "Pass-through enabled"
+        }
+
+        if !viewModel.showsOnAllSpaces {
+            return "Single-display mode"
         }
 
         switch viewModel.scrollStatus {

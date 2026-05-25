@@ -10,6 +10,8 @@ This is a best-effort privacy feature, not a guarantee.
 
 - Behavior can vary by macOS version.
 - Behavior can vary by capture tool, including Zoom, Microsoft Teams, and built-in macOS recording.
+- Recent conferencing and ScreenCaptureKit-based display sharing can still capture GhostNotes even when screenshots do not.
+- If you share one display and keep notes on another, turn off `All Spaces` so GhostNotes stays on the private display instead of following every space.
 - Test your own presentation setup before relying on it live.
 
 ## Get the Latest Build

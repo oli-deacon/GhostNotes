@@ -25,6 +25,7 @@ struct OverlaySettings {
     static let defaultNotesFontStyle: NotesFontStyle = .monospaced
     static let defaultWindowFrame = CGRect(x: 240, y: 240, width: 560, height: 360)
     static let defaultScreenShareExclusionEnabled = true
+    static let defaultShowsOnAllSpaces = true
 
     var notesText: String
     var windowOpacity: Double
@@ -34,4 +35,5 @@ struct OverlaySettings {
     var windowFrame: CGRect
     var isClickThroughEnabled: Bool
     var isScreenShareExclusionEnabled: Bool
+    var showsOnAllSpaces: Bool
 }
