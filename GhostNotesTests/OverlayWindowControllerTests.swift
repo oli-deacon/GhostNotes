@@ -51,10 +51,10 @@ final class OverlayWindowControllerTests: XCTestCase {
         XCTAssertTrue(window.collectionBehavior.contains(.stationary))
     }
 
-    func testInitialWindowUsesScreenSaverLevelWhenScreenShareExclusionEnabled() throws {
+    func testInitialWindowUsesCursorAdjacentLevelWhenScreenShareExclusionEnabled() throws {
         controller = OverlayWindowController(settingsStore: settingsStore)
         let window = try XCTUnwrap(controller?.window)
-        let expectedLevel = Int(CGWindowLevelForKey(.screenSaverWindow))
+        let expectedLevel = Int(CGWindowLevelForKey(.cursorWindow)) - 1
 
         XCTAssertEqual(window.level.rawValue, expectedLevel)
     }
@@ -99,7 +99,7 @@ final class OverlayWindowControllerTests: XCTestCase {
             NSWindow.SharingType.none.rawValue,
             "Expected toggled-on sharingType .none, got rawValue \(window.sharingType.rawValue)"
         )
-        XCTAssertEqual(window.level.rawValue, Int(CGWindowLevelForKey(.screenSaverWindow)))
+        XCTAssertEqual(window.level.rawValue, Int(CGWindowLevelForKey(.cursorWindow)) - 1)
     }
 
     func testSingleDisplayModePersistsAndUpdatesCollectionBehavior() throws {

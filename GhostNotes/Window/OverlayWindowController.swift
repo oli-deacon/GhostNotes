@@ -236,6 +236,6 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
             return .floating
         }
 
-        return NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)))
+        return NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.cursorWindow)) - 1)
     }
 }
