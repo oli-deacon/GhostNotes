@@ -47,6 +47,16 @@ final class OverlayWindowControllerTests: XCTestCase {
 
         XCTAssertTrue(window.collectionBehavior.contains(.canJoinAllSpaces))
         XCTAssertTrue(window.collectionBehavior.contains(.fullScreenAuxiliary))
+        XCTAssertTrue(window.collectionBehavior.contains(.ignoresCycle))
+        XCTAssertTrue(window.collectionBehavior.contains(.stationary))
+    }
+
+    func testInitialWindowUsesScreenSaverLevelWhenScreenShareExclusionEnabled() throws {
+        controller = OverlayWindowController(settingsStore: settingsStore)
+        let window = try XCTUnwrap(controller?.window)
+        let expectedLevel = Int(CGWindowLevelForKey(.screenSaverWindow))
+
+        XCTAssertEqual(window.level.rawValue, expectedLevel)
     }
 
     func testInitialWindowSharingTypeCanLoadAsReadOnly() throws {
@@ -60,6 +70,7 @@ final class OverlayWindowControllerTests: XCTestCase {
             NSWindow.SharingType.readOnly.rawValue,
             "Expected disabled sharingType .readOnly, got rawValue \(window.sharingType.rawValue)"
         )
+        XCTAssertEqual(window.level, .floating)
     }
 
     func testToggleScreenShareExclusionPersistsAndNewWindowReflectsUpdatedSharingType() throws {
@@ -67,6 +78,7 @@ final class OverlayWindowControllerTests: XCTestCase {
 
         controller?.toggleScreenShareExclusion()
         XCTAssertFalse(settingsStore.load().isScreenShareExclusionEnabled)
+        XCTAssertEqual(controller?.window?.level, .floating)
 
         controller?.window?.delegate = nil
         controller?.close()
@@ -78,6 +90,7 @@ final class OverlayWindowControllerTests: XCTestCase {
             NSWindow.SharingType.readOnly.rawValue,
             "Expected recreated disabled sharingType .readOnly, got rawValue \(window.sharingType.rawValue)"
         )
+        XCTAssertEqual(window.level, .floating)
 
         controller?.toggleScreenShareExclusion()
         XCTAssertTrue(settingsStore.load().isScreenShareExclusionEnabled)
@@ -86,6 +99,7 @@ final class OverlayWindowControllerTests: XCTestCase {
             NSWindow.SharingType.none.rawValue,
             "Expected toggled-on sharingType .none, got rawValue \(window.sharingType.rawValue)"
         )
+        XCTAssertEqual(window.level.rawValue, Int(CGWindowLevelForKey(.screenSaverWindow)))
     }
 
     func testSingleDisplayModePersistsAndUpdatesCollectionBehavior() throws {

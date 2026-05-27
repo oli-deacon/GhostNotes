@@ -31,7 +31,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
         )
 
         window.title = "Ghost Notes"
-        window.level = .floating
+        window.level = Self.windowLevel(isScreenShareExclusionEnabled: settings.isScreenShareExclusionEnabled)
         window.isOpaque = false
         window.hasShadow = true
         window.backgroundColor = .clear
@@ -151,6 +151,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
 
     func applyScreenShareExclusion(_ isEnabled: Bool) {
         window?.sharingType = isEnabled ? .none : .readOnly
+        window?.level = Self.windowLevel(isScreenShareExclusionEnabled: isEnabled)
     }
 
     func applyShowsOnAllSpaces(_ showsOnAllSpaces: Bool) {
@@ -221,12 +222,20 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private static func collectionBehavior(showsOnAllSpaces: Bool) -> NSWindow.CollectionBehavior {
-        var behavior: NSWindow.CollectionBehavior = [.fullScreenAuxiliary]
+        var behavior: NSWindow.CollectionBehavior = [.fullScreenAuxiliary, .ignoresCycle, .stationary]
 
         if showsOnAllSpaces {
             behavior.insert(.canJoinAllSpaces)
         }
 
         return behavior
+    }
+
+    private static func windowLevel(isScreenShareExclusionEnabled: Bool) -> NSWindow.Level {
+        guard isScreenShareExclusionEnabled else {
+            return .floating
+        }
+
+        return NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)))
     }
 }
